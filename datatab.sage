@@ -11,3 +11,5 @@ def py_func(f):
     '''
     vars = f.variables()
     return fast_callable(f(*vars), vars=vars)
+
+print('The package successfully loaded')
