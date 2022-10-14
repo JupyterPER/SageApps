@@ -28,3 +28,5 @@ def Subs(expression, substitutions):
     if type(substitutions) is list:
         substitutions = {eq.lhs():eq.rhs() for eq in substitutions}
     return expression._sympy_().subs(substitutions)._sage_()
+
+Print('The package was successfully loaded!!!')
