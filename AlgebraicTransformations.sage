@@ -8,7 +8,6 @@ def der(f,g):
     result = f.subs(g == gvar).diff(gvar).subs(gvar == g) 
     return result
 
-
 def Collect(expr, *kwargs):
     '''
     Collects terms containing common variables  using Maxima:
@@ -29,4 +28,4 @@ def Subs(expression, substitutions):
         substitutions = {eq.lhs():eq.rhs() for eq in substitutions}
     return expression._sympy_().subs(substitutions)._sage_()
 
-Print('The package was successfully loaded!!!')
+print('The package was successfully loaded!!!')
