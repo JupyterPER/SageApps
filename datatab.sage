@@ -43,7 +43,8 @@ def data(xh, yh, f, digits=3, table_labels=['x','y'], typ='skalar'):
     Volitelne parametre:
     
     * digits - pocet platnych cislic vo vystupe
-    * table_labels - mena premennych, ktore sa maju zobrazit v prikaze table
+    * table_labels - mena premennych, ktore sa maju zobrazit v prikaze table (mozu byt aj Latexovske)
+    * typ funkcie viacerych premennych - skalarne alebo vektorove pole
     
     '''
     # parameters
