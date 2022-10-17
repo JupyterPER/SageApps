@@ -15,7 +15,7 @@ from sage.ext.fast_callable import fast_callable
 
 def py_func(f):
     r'''
-    Conversion of a Sage symbolic to a Python function
+    Kovertuj Sage symbolicku funkciu na Pythonovsku
     '''
     vars = f.variables()
     return fast_callable(f(*vars), vars=vars)
