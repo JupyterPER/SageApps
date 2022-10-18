@@ -48,7 +48,7 @@ def data(xh, yh, f, digits=3, table_labels=['x','y'], typ='skalar'):
     
     '''
     # parameters
-    data = [[table_labels[0]+' \\ '+table_labels[1]]+list(map(lambda y: y.n(digits=digits),yh))]
+    data = [[table_labels[0]+'\\'+table_labels[1]]+list(map(lambda y: y.n(digits=digits),yh))]
     
     # data
     for x in xh:
