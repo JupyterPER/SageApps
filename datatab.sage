@@ -37,8 +37,8 @@ def data(xh, yh, f, digits=3, table_labels=['x','y'], typ='skalar'):
     Vyrob data pre tabulkovy - numericky popis funkcie f(x,y) dvoch premennych 
     zo zoznamov hodnot velicin xh, yh.
     
-    * xh su hodnoty v prvom riadku
-    * yh su hodnoty v prvom stlpci
+    * xh su hodnoty v prvom stlpci
+    * yh su hodnoty v prvom riadku
     
     Volitelne parametre:
     
@@ -48,12 +48,12 @@ def data(xh, yh, f, digits=3, table_labels=['x','y'], typ='skalar'):
     
     '''
     # parameters
-    data = [[table_labels[1]+' \\ '+table_labels[0]]+list(map(lambda x: x.n(digits=digits),xh))]
+    data = [[table_labels[1]+' \\ '+table_labels[0]]+list(map(lambda y: y.n(digits=digits),yh))]
     
     # data
-    for y in yh:
-        riadok = [y.n(digits=digits)]
-        for x in xh:
+    for x in xh:
+        riadok = [x.n(digits=digits)]
+        for y in yh:
             if typ == 'skalar': 
                 riadok += [RR(f(x,y)).n(digits=digits)]
             else:
