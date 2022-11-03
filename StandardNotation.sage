@@ -35,9 +35,9 @@ from sympy.printing import latex as Latex
 
 def showmath(expr, partial=True):
     if partial:
-        return html('$'+Latex(expr).replace('{d','{\\partial')+'$')
+        return html('$\\displaystyle '+Latex(expr).replace('{d','{\\partial')+'$')
     else:
-        return html('$'+Latex(expr)+'$')
+        return html('$\\displaystyle '+Latex(expr)+'$')
 
 def short_not(expr, values=shorts, simplify=True):
     if simplify:
