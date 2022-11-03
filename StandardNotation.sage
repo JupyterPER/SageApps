@@ -29,15 +29,15 @@ def Subs(expression, substitutions):
         substitutions = {eq.lhs():eq.rhs() for eq in substitutions}
     return expression._sympy_().subs(substitutions)._sage_()
     
-from IPython.display import Math
+# from IPython.display import Math
 import sympy as sym
 from sympy.printing import latex as Latex
 
 def showmath(expr, partial=True):
     if partial:
-        return Math(Latex(expr).replace('{d','{\\partial'))
+        return html('$'+Latex(expr).replace('{d','{\\partial')+'$')
     else:
-        return Math(Latex(expr))
+        return html('$'+Latex(expr)+'$')
 
 def short_not(expr, values=shorts, simplify=True):
     if simplify:
