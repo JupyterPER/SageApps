@@ -43,7 +43,7 @@ def showmath(expr, partial=True, compact = False):
     
 def short_not(expr, values=shorts, simplify=True):
     if simplify:
-        expr = expr.subs(shorts).canonicalize_radical().expand().reduce_trig()
+        expr = expr.expand().reduce_trig().canonicalize_radical().expand().reduce_trig()
     return expr._sympy_().subs({eq.lhs():eq.rhs() for eq in values})
 
 def Show(expr, partial=True, compact=False, values=shorts, simplify=True):
