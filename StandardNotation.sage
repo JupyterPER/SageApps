@@ -29,16 +29,18 @@ def Subs(expression, substitutions):
         substitutions = {eq.lhs():eq.rhs() for eq in substitutions}
     return expression._sympy_().subs(substitutions)._sage_()
     
-# from IPython.display import Math
-import sympy as sym
+#from IPython.display import Math
+#import sympy as sym
 from sympy.printing import latex as Latex
 
-def showmath(expr, partial=True):
+def showmath(expr, partial=True, compact = False):
+    latex_code = Latex(expr)
+    if not compact:
+        latex_code = '\\displaystyle'+latex_code.replace('\frac','\dfrac')
     if partial:
-        return html('$\\displaystyle '+Latex(expr).replace('{d','{\\partial')+'$')
-    else:
-        return html('$\\displaystyle '+Latex(expr)+'$')
-
+        latex_code = latex_code.replace('{d','{\\partial')
+    return html('$'+latex_code+'$')
+    
 def short_not(expr, values=shorts, simplify=True):
     if simplify:
         expr = expr.subs(shorts).canonicalize_radical().reduce_trig()
