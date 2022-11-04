@@ -38,8 +38,8 @@ def showmath(expr, partial=True, compact = False):
     if partial:
         latex_code = latex_code.replace('{d','{\\partial')
     if not compact:
-        latex_code = '\\displaystyle '+latex_code.replace('\frac','\dfrac')
-    return html('$'+latex_code+'$')
+        latex_code = '$\\displaystyle '+latex_code.replace('\frac','\dfrac')+'$'
+    return html(latex_code)
     
 def short_not(expr, values=shorts, simplify=True):
     if simplify:
