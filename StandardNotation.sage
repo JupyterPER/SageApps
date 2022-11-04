@@ -38,15 +38,15 @@ def showmath(expr, partial=True, compact = False):
     if partial:
         latex_code = latex_code.replace('{d','{\\partial')
     if not compact:
-        latex_code = '$\\displaystyle '+latex_code.replace('\\frac','\\dfrac')+'$'
-    return html(latex_code)
+        latex_code = '\\displaystyle '+latex_code.replace('\\frac','\\dfrac')
+    return html('$'+latex_code+'$')
     
 def short_not(expr, values=shorts, simplify=True):
     if simplify:
         expr = expr.subs(shorts).canonicalize_radical().reduce_trig()
     return expr._sympy_().subs({eq.lhs():eq.rhs() for eq in values})
 
-def Show(expr, values=shorts, simplify=True):
-    return showmath(short_not(expr, values=values, simplify=simplify))
+def Show(expr, partial=True, compact=False, values=shorts, simplify=True):
+    return showmath(short_not(expr, values, simplify), partial, compact)
 
 print('The package was successfully loaded!!!')
