@@ -36,7 +36,7 @@ from sympy.printing import latex as Latex
 def showmath(expr, partial=True, compact = False):
     latex_code = Latex(expr)
     if partial:
-        latex_code = latex_code.replace('{d','{\\partial')
+        latex_code = latex_code.replace('d','\\partial')
     if not compact:
         latex_code = '\\displaystyle '+latex_code.replace('\\frac','\\dfrac')
     return display(html('$'+latex_code+'$'))
