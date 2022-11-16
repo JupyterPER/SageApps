@@ -49,4 +49,5 @@ def short_not(expr, values=shorts, simplify=True):
 def Show(expr, partial=True, compact=False, values=shorts, simplify=True):
     return showmath(short_not(expr, values, simplify), partial, compact)
 
+
 print('The package was successfully loaded!!!')
