@@ -56,7 +56,7 @@ y_max = SelectionSlider(options = [round(item,1) for item in max_vyska], value=1
 vzhlad = Layout(display='flex', flex_flow='row', justify_content='space-between')
 
 ovladace = [
-    Box([Label(value='$\\textbf{Exp}\\boldsymbol{(\\delta)}\quad$'), hustota, data], layout=vzhlad),
+    Box([Label(value='$\\textbf{Exp}\\boldsymbol{(\\delta)}\\,\\,$'), hustota, data], layout=vzhlad),
     Box([Label(value='Parameter $\\delta$'), populacna_stredna_hodnota], layout=vzhlad),
     Box([Label(value='Veľkosť vzorky $n$'), velkost_vzorky], layout=vzhlad),
     Box([Label(value='Počet vzoriek $N$'), pocet_vyberov], layout=vzhlad),
