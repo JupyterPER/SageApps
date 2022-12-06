@@ -3,13 +3,17 @@
 
 # **Diplomová práca**, Bc. Martina Loncová, PF UPJŠ v Košiciach  
 # 
-# # <font color=green>Pravdepodobnostné rozdelenie výberovej štatistiky  </font>
+# # <font color=green>Pravdepodobnostné rozdelenie a vlastnosti výberových štatistík  </font>
 # ## Interaktívny matematický hárok
 
-# **Nastavenia - Python** 
+# **Nastavenia - Pythonovské knižnice** 
 
 # In[1]:
 
+
+# ignorovanie upozornení
+import warnings
+warnings.filterwarnings("ignore")
 
 # nacitanie pythonovskych kniznic a prikazov
 import numpy as np
@@ -22,10 +26,7 @@ S1 = lambda vzorka: np.std(vzorka, ddof = 1)
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-whitegrid')
 boxstyle = {'boxstyle':'round', 'fc':'w'}
-
-# ignorovanie upozornení
-import warnings
-warnings.filterwarnings("ignore")
+get_ipython().run_line_magic('matplotlib', 'inline')
 
 
 # **Nastavenie - grafické ovládacie prvky**
@@ -55,7 +56,7 @@ y_max = SelectionSlider(options = [round(item,1) for item in max_vyska], value=1
 vzhlad = Layout(display='flex', flex_flow='row', justify_content='space-between')
 
 ovladace = [
-    Box([Label(value='$\\textbf{Exp}\\boldsymbol{(\\delta)}\\quad$'), hustota, data], layout=vzhlad),
+    Box([Label(value='$\\textbf{Exp}\\boldsymbol{(\\delta)}\quad$'), hustota, data], layout=vzhlad),
     Box([Label(value='Parameter $\\delta$'), populacna_stredna_hodnota], layout=vzhlad),
     Box([Label(value='Veľkosť vzorky $n$'), velkost_vzorky], layout=vzhlad),
     Box([Label(value='Počet vzoriek $N$'), pocet_vyberov], layout=vzhlad),
@@ -146,3 +147,4 @@ simulacia = interactive_output(zobraz_histogram, {'bins':pocet_stlpcov,
                                                   'density':hustota,
                                                   'data':data})
 Display(panelS, simulacia, panelG)
+
