@@ -26,8 +26,6 @@ S1 = lambda vzorka: np.std(vzorka, ddof = 1)
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-whitegrid')
 boxstyle = {'boxstyle':'round', 'fc':'w'}
-get_ipython().run_line_magic('matplotlib', 'inline')
-
 
 # **Nastavenie - grafické ovládacie prvky**
 
@@ -137,7 +135,7 @@ def zobraz_histogram(bins = 20, n = 1, N = 500, digits = 4, m = 1, sigma = 1, ym
 
 # In[4]:
 
-
+get_ipython().run_line_magic('matplotlib', 'inline')
 # interaktivna simulacia
 simulacia = interactive_output(zobraz_histogram, {'bins':pocet_stlpcov, 
                                                   'n':velkost_vzorky, 
