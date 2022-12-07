@@ -56,8 +56,8 @@ y_max = SelectionSlider(options = [round(item,1) for item in max_vyska], value=1
 # ovladaci panel
 vzhlad = Layout(display='flex', flex_flow='row', justify_content='space-between')
 
-dist_name, m_name, sigma_name = '\\textbf{Po}', '\\mu', '\\sigma'
-p1_name, p2_name ='\\lambda', ''
+dist_name, m_name, sigma_name = '\\textbf{Exp}', '\\mu', '\\sigma'
+p1_name, p2_name ='\\delta', ''
 par_name = p1_name#+','+p2_name
 
 ovladace = [
