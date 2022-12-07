@@ -31,7 +31,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 
 # **Nastavenie - grafické ovládacie prvky**
 
-# In[2]:
+# In[6]:
 
 
 # graficke prvky
@@ -46,12 +46,12 @@ data = Dropdown(options=['priemery', 'odchýlky (s)', 'odchýlky (s1)'], value='
 parameter1 = BoundedFloatText(value=1, min=-500, max=500, step=0.1)
 #parameter2 =  BoundedFloatText(value=1, min=1, max=100, step=0.1)
 pocet_vyberov = BoundedIntText(value = 500, min=100, max=1000000, step=100)
-pocet_stlpcov = IntSlider(value=20, min=5, max=100, step=5, continuous_update=False)
+pocet_stlpcov = IntSlider(value=7, min=5, max=100, step=2, continuous_update=False)
 
 velkosti_vzorky = [1, 2, 5, 10, 20, 50, 100] + [200, 300, .. 1000] + [2000, 3000, .. 10000]
 velkost_vzorky = SelectionSlider(options = velkosti_vzorky, value=1, continuous_update=False)
 max_vyska = [0.1, 0.2, 0.5, 1, 1.5, 2, 5, 10, 20, 50, 100]
-y_max = SelectionSlider(options = [round(item,1) for item in max_vyska], value=1, continuous_update=False)
+y_max = SelectionSlider(options = [round(item,1) for item in max_vyska], value=0.5, continuous_update=False)
 
 # ovladaci panel
 vzhlad = Layout(display='flex', flex_flow='row', justify_content='space-between')
@@ -76,22 +76,22 @@ panelG = Box(ovladace[-2:], layout=Layout(display='flex', flex_flow='column', bo
                                           align_items='stretch',  width='60%'))
 
 
-# In[3]:
+# In[7]:
 
 
 #Display(panelS, panelG)
 
 
-# # **Exponenciálne rozdelenie s interaktívnou simuláciou**
+# # **Poissonovo rozdelenie s interaktívnou simuláciou**
 
-# **Náhodný výber vzorky o veľkosti $\boldsymbol{n}$ z populácie s parametrom $\delta$**
+# **Náhodný výber vzorky o veľkosti $\boldsymbol{n}$ z populácie s parametrom $\lambda$**
 
-# In[4]:
+# In[8]:
 
 
 # Výber vzorky veľkosti n realizovaný N-krát s rozdelenia so strednou hodnotou m a odchylkou n
 
-def zobraz_histogram(bins = 20, n = 1, N = 500, digits = 4, p1 = 1, p2 = 1, ymax=1, 
+def zobraz_histogram(bins = 7, n = 1, N = 500, digits = 4, p1 = 1, p2 = 1, ymax=0.5, 
                      density = False, data='priemery'):
     
     # charakteristiky rozdelenia
@@ -104,7 +104,7 @@ def zobraz_histogram(bins = 20, n = 1, N = 500, digits = 4, p1 = 1, p2 = 1, ymax
     odchylky = []
     odchylky1 = []
     for pokus in [1 .. N]:
-        vzorka = np.random.exponential(m, n)
+        vzorka = np.random.poisson(m, n)
         priemery += [mean(vzorka)]
         odchylky += [S(vzorka)]
         odchylky1 += [S1(vzorka)]
@@ -145,12 +145,13 @@ def zobraz_histogram(bins = 20, n = 1, N = 500, digits = 4, p1 = 1, p2 = 1, ymax
         g = hN + c_parameter + c_odhad + Text
     
         if data == 'priemery' and density: 
-            g += plot(1/m*exp(-x/m), (x, 0, 7*m), color='gray', linestyle='--')
+            body = [(k, m^k*exp(-m)/factorial(k)) for  k in [0,1 .. m+6*sigma] ]
+            g += line(body, color='gray', linestyle='--', marker='o')
         
         g.show(figsize=[6,4], frame = True, ymax=ymax, xmin=xmin, xmax=xmax)
 
 
-# In[5]:
+# In[9]:
 
 
 # interaktivna simulacia
