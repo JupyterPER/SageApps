@@ -145,7 +145,7 @@ def zobraz_histogram(bins = 20, n = 1, N = 500, digits = 4, p1 = 1, p2 = 1, ymax
         g = hN + c_parameter + c_odhad + Text
     
         if data == 'priemery' and density: 
-            g += plot(1/m*exp(-x/m), (x, 0, 7*m), color='gray', linestyle='--')
+            g += plot(1/m*exp(-x/m), (x, 0, 7*m), color='gray', linestyle='-')
         
         g.show(figsize=[6,4], frame = True, ymax=ymax, xmin=xmin, xmax=xmax)
 
