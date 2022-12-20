@@ -77,8 +77,9 @@ panelR = Box(box, layout=Layout(display='flex', flex_flow='column',
 # Nacitanie simulacie
 def zobraz_simulaciu(rozdelenie ='Normálne rozdelenie'):
     typ = zoznam[rozdelenie]
+    url='https://raw.githubusercontent.com/JupyterPER/SageMathExamples/main/'
     #get_ipython().run_line_magic('run', typ+'Rozdelenie-Adaptive.ipynb')
-    load(typ+'Rozdelenie-Adaptive.sage')
+    load(url+typ+'Rozdelenie-Adaptive.sage')
 
 # interaktivna simulacia
 simulacia = interactive_output(zobraz_simulaciu, {'rozdelenie':distribution})
