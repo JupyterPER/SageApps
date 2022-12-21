@@ -46,7 +46,7 @@ velkosti_vzorky = [1, 2, 5, 7, 10, 20, 50, 100] + [200, 300, .. 1000] + [2000, 3
 velkost_vzorky = slider(velkosti_vzorky, label='$n=$')
 
 parameter1 = input_box(label='$'+p1_name+'$',default=1, width=65)
-parametre = input_grid(1, 2, default=[10,0.5], label='$'+par_name+'$', width=28)
+parametre = input_grid(1, 2, default=[10,round(0.5,1)], label='$'+par_name+'$', width=28)
 
 pocet_stlpcov = slider(default=7, vmin=5, vmax=100, step_size=2, label='stĺpce')
 pocet_vzoriek = input_box(label='$N=$',default=500, width=65)
