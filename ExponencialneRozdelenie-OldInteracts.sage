@@ -45,7 +45,7 @@ adaptive_axes = checkbox(False, 'adaptívne')
 velkosti_vzorky = [1, 2, 5, 7, 10, 20, 50, 100] + [200, 300, .. 1000] + [2000, 3000, .. 10000]
 velkost_vzorky = slider(velkosti_vzorky, label='$n=$')
 
-parameter1 = input_box(label='$'+p1_name+'$',default=1, width=65)
+parameter1 = input_box(label='$'+p1_name+'=$',default=1, width=65)
 parametre = input_grid(1, 2, default=[1,0], label='$'+par_name+'$', width=28)
 
 pocet_stlpcov = slider(default=20, vmin=5, vmax=100, step_size=5, label='stĺpce')
