@@ -37,7 +37,7 @@ par_name = p1_name#+','+p2_name
 
 # graficke ovladace
 max_vyska = [0.1, 0.2, 0.3, 0.4, 0.5, 1, 1.5, 2, 5, 10, 20, 50, 100]
-y_max = slider([round(item,1) for item in max_vyska], label='$y_{max}$')
+y_max = slider([round(item,1) for item in max_vyska], label='$y_{max}$', default=1)
 
 hustota = checkbox(False, 'hustota')
 adaptive_axes = checkbox(False, 'adaptívne')
