@@ -18,6 +18,7 @@ from numpy import array as v, float64 as dc
 from numpy import sqrt, mean, std as S
 # smerodajna vychylka S1
 S1 = lambda vzorka: np.std(vzorka, ddof = 1)
+from scipy.stats import geom, binom
 
 # vlastny styl grafov
 import matplotlib.pyplot as plt
