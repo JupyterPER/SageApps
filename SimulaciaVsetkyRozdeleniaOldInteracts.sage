@@ -10,7 +10,6 @@
 
 # In[1]:
 
-from scipy.stats import geom, binom
 # rozdelenie
 # ovladace
 zoznam = {'Normálne rozdelenie':'Normalne', 
