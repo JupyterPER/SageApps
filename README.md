@@ -1,1 +1,1 @@
-# SageMathExamples
+# SageMath Applications
