@@ -47,6 +47,9 @@ from googletrans import Translator
 translator = Translator()
 trENGSK = lambda text:translator.translate(text, src='en', dest='sk').text.replace('.','. ')
 
-from scipy.constants import find, physical_constants
+from molmass import Formula as vzorec
+from mendeleev import element as prvok
+from scipy.constants import R as Rv, zero_Celsius as Z0, N_A as NA
+from scipy.constants import find, physical_constants as konst
 
 print('The contents of the package have been loaded successfully.')
