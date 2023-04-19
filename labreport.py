@@ -52,4 +52,4 @@ def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
 # from scipy.constants import R as Rv, zero_Celsius as Z0, N_A as NA
 # from scipy.constants import find, physical_constants as konst
 
-# print('The contents of the package have been loaded successfully.')
+print('The contents of the package have been loaded successfully.')
