@@ -1,5 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
+
+q_slider=slider(np.arange(0, 0.99, 0.01), default=0.1,label=r'$q$ =')
+
 np.random.seed(1010)
 var('m')
 k = 15
@@ -10,7 +13,7 @@ gamma_p = 1/sqrt(1-q_p^2)
 body_p = [(10*cos(m)/gamma_p, 10*sin(m)) for m in [0,0.01..2*pi]]
 planeta = polygon(body_p, color='salmon')
 @interact
-def kontrakcia(q=slider([0, 0.01, ..0.99],default=0,label=r'$q$ =')):
+def kontrakcia(q=q_slider):
     q = float(q)
     gamma = 1/sqrt(1-q^2)
     body_r = [(10*cos(m)/gamma, 10*sin(m)) for m in [0,0.01..2*pi]] 
