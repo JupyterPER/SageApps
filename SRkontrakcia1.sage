@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 np.random.seed(1010)
 
-q_slider=slider(np.arange(0, 0.99, 0.01), default=0.7,label=r'$q$ =')
+q_slider=slider(np.arange(0, 0.10, 0.01), default=0.7,label=r'$q$ =')
 
 var('m')
 k = 15
