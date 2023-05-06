@@ -2,6 +2,15 @@
 
 from sympy.printing import latex as Latex
 
+def Collect(expr, *kwargs):
+    '''
+    Collects terms containing common variables  using Maxima:
+    - expr: an expression
+    - *kwargs: given variables
+    '''
+    exprm = expr.maxima_methods()
+    return exprm.collectterms(*kwargs)._sage_()
+
 def Subs(expression, substitutions):
     '''
     Substitution proccesed by Sympy:
