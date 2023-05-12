@@ -2,10 +2,11 @@
 import numpy as np
 import pandas as pd
 import metrolopy as uc
-import sigfig as sf
+# import sigfig as sf
 import warnings
 warnings.filterwarnings('ignore') # setting ignore as a parameter
 
+from IPython.display import YouTubeVideo
 from numpy import array as v
 from numpy import float64 as dc
 from numpy import sqrt
@@ -43,13 +44,20 @@ def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
             table = table.transpose()
     return table
 
-from googletrans import Translator
-translator = Translator()
-trENGSK = lambda text:translator.translate(text, src='en', dest='sk').text.replace('.','. ')
+def ipyurl(url, storage='google'):
+    if storage=='google':
+        url = ''.join(["'",url.replace('file/d/','uc?id=').replace('/view?usp=sharing', ''), "'"])
+    else:
+        url = ''.join(["'",url.replace('?dl=0','?raw=1'), "'"])
+    return print('src='+url)
 
-from molmass import Formula as vzorec
-from mendeleev import element as prvok
-from scipy.constants import R as Rv, zero_Celsius as Z0, N_A as NA
-from scipy.constants import find, physical_constants as konst
+# from googletrans import Translator
+# translator = Translator()
+# trENGSK = lambda text:translator.translate(text, src='en', dest='sk').text.replace('.','. ')
+
+# from molmass import Formula as vzorec
+# from mendeleev import element as prvok
+# from scipy.constants import R as Rv, zero_Celsius as Z0, N_A as NA
+# from scipy.constants import find, physical_constants as konst
 
 print('The contents of the package have been loaded successfully.')
