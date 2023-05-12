@@ -6,6 +6,7 @@ import metrolopy as uc
 import warnings
 warnings.filterwarnings('ignore') # setting ignore as a parameter
 
+from IPython.display import YouTubeVideo
 from numpy import array as v
 from numpy import float64 as dc
 from numpy import sqrt
@@ -42,6 +43,13 @@ def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
         if transpose:
             table = table.transpose()
     return table
+
+def ipyurl(url, storage='google'):
+    if storage=='google':
+        url = ''.join(["'",url.replace('file/d/','uc?id=').replace('/view?usp=sharing', ''), "'"])
+    else:
+        url = ''.join(["'",url.replace('?dl=0','?raw=1'), "'"])
+    return print('src='+url)
 
 # from googletrans import Translator
 # translator = Translator()
