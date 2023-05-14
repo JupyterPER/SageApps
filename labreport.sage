@@ -47,11 +47,11 @@ def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
 def ipyurl(url, storage='google', medium = 'image'):
     if medium == 'image':
         if storage=='google':
-            url = ''.join(["'",url.replace('file/d/','uc?id=').replace('/view?usp=sharing', ''), "'"])
+            url = url.replace('file/d/','uc?id=').replace('/view?usp=sharing', '')
         else:
-            url = ''.join(["'",url.replace('?dl=0','?raw=1'), "'"])
+            url = url.replace('?dl=0','?raw=1')
     if medium == 'table':
-            url = ''.join(["'",url.replace('edit','preview'), "'"])
+            url = url.replace('edit','preview')
     return url
 
 def frame_wrapping(df, fillna=True):
