@@ -44,12 +44,31 @@ def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
             table = table.transpose()
     return table
 
-def ipyurl(url, storage='google'):
-    if storage=='google':
-        url = ''.join(["'",url.replace('file/d/','uc?id=').replace('/view?usp=sharing', ''), "'"])
-    else:
-        url = ''.join(["'",url.replace('?dl=0','?raw=1'), "'"])
-    return print('src='+url)
+def ipyurl(url, storage='google', typ = 'image'):
+    if typ = 'image':
+        if storage=='google':
+            url = ''.join(["'",url.replace('file/d/','uc?id=').replace('/view?usp=sharing', ''), "'"])
+        else:
+            url = ''.join(["'",url.replace('?dl=0','?raw=1'), "'"])
+    if typ = 'table':
+            url = ''.join(["'",url.replace('edit','preview'), "'"])
+    return print('url='+url)
+
+def frame_wrapping(df, fillna=True):
+    def format_line_break(value):
+        if isinstance(value, str):
+            value = value.replace('\n', '<br>')
+        return value
+    
+    if fillna:
+        # Replace column names containing 'Unnamed' with empty strings
+        df.columns = [col if 'Unnamed' not in col else '' for col in df.columns]
+    
+        # Replace NaN values with empty strings
+        df = df.fillna('')
+    
+    wrapped_df  = df.style.format(formatter=format_line_break)
+    return wrapped_df 
 
 from IPython.display import display, HTML
 display(HTML("<style>.container { width:100% !important; }</style>"))
