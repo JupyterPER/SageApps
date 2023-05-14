@@ -44,13 +44,13 @@ def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
             table = table.transpose()
     return table
 
-def ipyurl(url, storage='google', typ = 'image'):
-    if typ = 'image':
+def ipyurl(url, storage='google', medium = 'image'):
+    if medium == 'image':
         if storage=='google':
             url = ''.join(["'",url.replace('file/d/','uc?id=').replace('/view?usp=sharing', ''), "'"])
         else:
             url = ''.join(["'",url.replace('?dl=0','?raw=1'), "'"])
-    if typ = 'table':
+    if medium == 'table':
             url = ''.join(["'",url.replace('edit','preview'), "'"])
     return print('url='+url)
 
