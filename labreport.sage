@@ -52,7 +52,7 @@ def ipyurl(url, storage='google', medium = 'image'):
             url = ''.join(["'",url.replace('?dl=0','?raw=1'), "'"])
     if medium == 'table':
             url = ''.join(["'",url.replace('edit','preview'), "'"])
-    return print('url='+url)
+    return url
 
 def frame_wrapping(df, fillna=True):
     def format_line_break(value):
