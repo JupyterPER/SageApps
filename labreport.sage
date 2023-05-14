@@ -51,6 +51,9 @@ def ipyurl(url, storage='google'):
         url = ''.join(["'",url.replace('?dl=0','?raw=1'), "'"])
     return print('src='+url)
 
+from IPython.display import display, HTML
+display(HTML("<style>.container { width:100% !important; }</style>"))
+
 # from googletrans import Translator
 # translator = Translator()
 # trENGSK = lambda text:translator.translate(text, src='en', dest='sk').text.replace('.','. ')
