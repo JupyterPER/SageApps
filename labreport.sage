@@ -19,7 +19,7 @@ std = lambda x: npstd(x,ddof=1)
 
 uc.gummy.style = '+-'
 
-def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
+def budget(gvel, gnames, form = 'full', notation='decimal', transpose = False):
     indirect = gnames[0]
     direct = gnames[1:]
     table = gvel[0].budget(gvel[1:], xnames = direct)
@@ -36,8 +36,6 @@ def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
         db.set_index(['Unit'], append=True, inplace=True)
         if notation == 'decimal':
             table = db.fillna('').astype(str)
-        elif notation == 'sci':  
-            table = db.transpose().fillna('')
         else:
             table = db.fillna('')
         if transpose:
