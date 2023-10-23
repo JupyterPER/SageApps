@@ -1,4 +1,4 @@
-# version 3.0
+# version 3.1
 
 from sympy.printing import latex as Latex
 
@@ -8,7 +8,7 @@ def Collect(expr, *kwargs):
     - expr: an expression
     - *kwargs: given variables
     '''
-    exprm = expr.maxima_methods()
+    exprm = expr.expand().maxima_methods()
     return exprm.collectterms(*kwargs)._sage_()
 
 def Subs(expression, substitutions):
