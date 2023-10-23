@@ -22,6 +22,17 @@ def Subs(expression, substitutions):
         substitutions = {eq.lhs():eq.rhs() for eq in substitutions}
     return expression._sympy_().subs(substitutions)._sage_()
 
+def der(f,g):
+    """
+    derivative of function f with respect function g
+     - f can be an algebraic expression
+     - g can be a symbolic variable, function or expression
+    """
+    gvar = var('gvar')
+    result = f.subs(g == gvar).diff(gvar).subs(gvar == g) 
+    return result
+
+
 def is_function(f):
     if "<class 'sage.symbolic.function_factory.function_factory.<locals>.NewSymbolicFunction'>" == str(type(f.operator())):
         return True
@@ -211,7 +222,7 @@ def showmath_short(expr, partial=True, compact = False):
         latex_code = latex_code.replace('d','\\partial')
     if not compact:
         latex_code = '\\displaystyle '+latex_code.replace('\\frac','\\dfrac')
-    return display(html('$'+latex_code+'$'))
+    return display(html('′+latexcode+′'+latex_code+''))
 
 #################
 def Show(expr, partial=True, compact=False, simplify=True, notation='leibniz'):
@@ -220,5 +231,4 @@ def Show(expr, partial=True, compact=False, simplify=True, notation='leibniz'):
     elif notation=='dot':
         return show(dot_not(expr, simplify))
         
-        
-        
+print('The package was successfully loaded!!!')       
