@@ -13,6 +13,8 @@ from sage.ext.fast_callable import fast_callable
 #import matplotlib.pyplot as plt
 #plt.style.use('seaborn-darkgrid')
 
+v = lambda data: np.array(data)
+
 def py_func(f):
     r'''
     Kovertuj Sage symbolicku funkciu na Pythonovsku
