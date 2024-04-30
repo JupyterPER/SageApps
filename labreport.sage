@@ -115,4 +115,6 @@ def read_google_table(url):
     else:
         return "Not valid URL, see 'help(read_google_table)'."
     gdf = pd.read_csv(URL)
+    gdf = gdf.replace('\n',' ', regex=True)
+    gdf.columns = [col.replace('\n', ' ') for col in gdf.columns]
     return gdf
