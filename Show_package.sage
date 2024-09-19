@@ -2,6 +2,14 @@
 
 from sympy.printing import latex as Latex
 
+def showURL(url, ht=560):
+
+    '''shortcut for IFrame displaying various media at given url address;
+       for interactive SageMath worksheets it is appropriate height 430 and width 100%
+    '''
+    from IPython.display import IFrame
+    return IFrame(url, width='95%', height=ht)
+
 def Collect(expr, *kwargs):
     '''
     Collects terms containing common variables  using Maxima:
