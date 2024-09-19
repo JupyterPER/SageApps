@@ -1,6 +1,7 @@
 # version 3.1
 
 from sympy.printing import latex as Latex
+from IPython.display import Math 
 
 def showURL(url, ht=560):
 
