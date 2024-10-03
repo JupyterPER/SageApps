@@ -36,3 +36,58 @@ def read_google_table(url):
     gdf = gdf.replace('\n',' ', regex=True)
     gdf.columns = [col.replace('\n', ' ') for col in gdf.columns]
     return gdf
+
+def plot_errorbars(x_vals, y_vals, color_mean='blue', size_mean=30, marker_mean='o', legen_label_mean=None, color_std='red', thickness_std=1, rel_cap_width_std=0.01):
+    """
+    Create a plot with error bars showing mean and standard deviation.
+
+    Parameters:
+    x_vals (list): List of x-values
+    y_vals (list): List of y-values
+    color_mean (str): Color of the mean points (default: 'blue')
+    size_mean (int): Size of the mean points (default: 30)
+    marker_mean (str): Marker style for mean points (default: 'o')
+    legen_label_mean (str): Legend label for mean points (default: None)
+    color_std (str): Color of the error bars (default: 'red')
+    thickness_std (int): Thickness of the error bars (default: 1)
+    rel_cap_width_std (float): Relative width of error bar caps (default: 0.01)
+
+    Returns:
+    sage.plot.plot.Graphics: A Sage graphics object containing the plot
+    """
+
+    # Create a dictionary with x and y values
+    data = {
+        'x': x_vals,
+        'y': y_vals
+    }
+    
+    # Convert the dictionary to a pandas DataFrame
+    df = pd.DataFrame(data)
+    
+    # Group by x-values and calculate mean and standard deviation
+    stats = df.groupby('x')['y'].agg(['mean', 'std']).reset_index()
+    x_st = stats['x']
+    mean = stats['mean']
+    std = stats['std']
+
+    # Create a plot for mean values
+    p = list_plot(list(zip(x_st, mean)), color=color_mean, marker=marker_mean, 
+                  size=size_mean, legend_label=legen_label_mean)
+
+    # Add error bars
+    cap_width = rel_cap_width_std * max(x_st)  # Width of end caps, can be adjusted as needed
+    for i in range(len(x_st)):
+        lower = mean[i] - std[i]
+        upper = mean[i] + std[i]
+        
+        # Vertical line for error bar
+        p += line([(x_st[i], lower), (x_st[i], upper)], color=color_std, thickness=thickness_std)
+        
+        # Small horizontal lines at the ends (caps)
+        p += line([(x_st[i] - cap_width, lower), (x_st[i] + cap_width, lower)], 
+                  color=color_std, thickness=thickness_std)
+        p += line([(x_st[i] - cap_width, upper), (x_st[i] + cap_width, upper)], 
+                  color=color_std, thickness=thickness_std)
+
+    return p
