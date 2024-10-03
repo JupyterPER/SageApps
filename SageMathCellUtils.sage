@@ -37,7 +37,7 @@ def read_google_table(url):
     gdf.columns = [col.replace('\n', ' ') for col in gdf.columns]
     return gdf
 
-def plot_errorbars(x_vals, y_vals, color_mean='blue', size_mean=30, marker_mean='o', legen_label_mean=None, color_std='red', thickness_std=1, rel_cap_width_std=0.01):
+def plot_errorbars(x_vals, y_vals, color_mean='blue', size_mean=30, marker_mean='o', legend_label_mean=None, color_std='red', thickness_std=1, rel_cap_width_std=0.01):
     """
     Create a plot with error bars showing mean and standard deviation.
 
@@ -73,7 +73,7 @@ def plot_errorbars(x_vals, y_vals, color_mean='blue', size_mean=30, marker_mean=
 
     # Create a plot for mean values
     p = list_plot(list(zip(x_st, mean)), color=color_mean, marker=marker_mean, 
-                  size=size_mean, legend_label=legen_label_mean)
+                  size=size_mean, legend_label=legend_label_mean)
 
     # Add error bars
     cap_width = rel_cap_width_std * max(x_st)  # Width of end caps, can be adjusted as needed
