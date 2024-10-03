@@ -91,3 +91,5 @@ def plot_errorbars(x_vals, y_vals, color_mean='blue', size_mean=30, marker_mean=
                   color=color_std, thickness=thickness_std)
 
     return p
+
+print('SageMathCellUtils loaded!')
