@@ -1,4 +1,5 @@
 import pandas as pd
+import io
 
 def read_google_table(url):
     """
