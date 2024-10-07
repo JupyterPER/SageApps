@@ -4,6 +4,9 @@ from sympy.printing import latex as Latex
 from IPython.display import Math 
 import re
 
+# definition of Levi-Civita symbol
+eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
+
 def showURL(url, ht=560):
 
     '''shortcut for IFrame displaying various media at given url address;
