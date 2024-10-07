@@ -1,7 +1,8 @@
-# version 3.1
+# version 4.0
 
 from sympy.printing import latex as Latex
 from IPython.display import Math 
+import re
 
 def showURL(url, ht=560):
 
@@ -173,6 +174,13 @@ def shorts(lf):
 ##############################
 is_symbolic_function = lambda f: True if f.operands()==list(f.free_variables()) and f.operands()!=[] else False
 
+def is_iterable(obj):
+    try:
+        iter(obj)
+        return True
+    except TypeError:
+        return False
+
 ################
 def newton_shorts(expr):
     '''
@@ -224,19 +232,74 @@ def short_not(expr, simplify=True):
     values = shorts(lf)
     return expr._sympy_().subs(values)
 
+
+def short_not_nested_list(nested_list, simplify=True):
+    def recurse(item):
+        if is_iterable(item):
+            item = list(item)
+        if isinstance(item, list):
+            return [recurse(sub_item) for sub_item in item]
+        else:
+            return short_not(item, simplify=simplify)
+    
+    return recurse(nested_list)
+
+def short_not_list(list_terms, simplify=True):
+    return [short_not(term, simplify=simplify) for term in list_terms]
+
+def short_not_matrix(matr, simplify=True):
+    from sympy import Matrix as SymMatrix
+    rows_matrix = list(matr)
+    short_not_matr = [short_not_list(row,simplify=simplify) for row in rows_matrix]
+    sym_matrix = SymMatrix(short_not_matr)
+    return sym_matrix
+
+def short_not_vector(vec, simplify=True):
+    from sympy import Matrix as SymMatrix
+    n, m = Matrix(vec).dimensions()
+    if n>m:
+        sym_vector = short_not_matrix(vec, simplify=simplify)
+    else:
+        sym_vector = short_not_matrix([vec], simplify=simplify)
+    return sym_vector
+
 #################
-def showmath_short(expr, partial=True, compact = False):
+def replace_total_with_partial_diff(latex_string):
+    # Pattern to match total differentials in the form \frac{d}{d g_{}} f_{}
+    pattern = r'\\frac{d}{d\s*([a-zA-Z])_{(\{\})?}}'
+    
+    def replace_func(match):
+        variable = match.group(1)
+        brackets = match.group(2) or ''  # Use empty string if no brackets
+        return r'\frac{\partial}{\partial ' + variable + '_{' + brackets + '}}'
+    
+    # Replace all occurrences
+    return re.sub(pattern, replace_func, latex_string)
+
+def showmath_short(expr, partial=True, compact = False, vector_or_matrix=False):
     latex_code = Latex(expr)
     if partial:
-        latex_code = latex_code.replace('d','\\partial')
+        latex_code = replace_total_with_partial_diff(latex_code)
+    if vector_or_matrix:
+        latex_code = latex_code.replace('\\left[','\\left(').replace('\\right]','\\right)')
     if not compact:
-        latex_code = '\\displaystyle '+latex_code.replace('\\frac','\\dfrac')
+        latex_code = latex_code.replace('\\frac','\\dfrac')
+    # latex_code = '\\displaystyle ' + latex_code 
     return display(html('$'+latex_code+'$'))
 
 #################
+
 def Show(expr, partial=True, compact=False, simplify=True, notation='leibniz'):
     if notation=='leibniz':
-        return showmath_short(short_not(expr, simplify), partial, compact)
+        if is_iterable(expr):
+            if 'list' in str(type(expr)):
+                return showmath_short(short_not_nested_list(expr, simplify), partial, compact)
+            if 'matrix' in str(type(expr)):
+                return showmath_short(short_not_matrix(expr, simplify), partial, compact, vector_or_matrix=True)
+            if 'free_module.FreeModule_ambient_field_with_category' in str(type(expr)):
+                return showmath_short(short_not_vector(expr, simplify), partial, compact, vector_or_matrix=True)
+        else:
+            return showmath_short(short_not(expr, simplify), partial, compact)
     elif notation=='dot':
         return show(dot_not(expr, simplify))
         
