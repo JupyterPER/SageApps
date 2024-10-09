@@ -244,7 +244,7 @@ function addControlPanel() {
 
     const button = document.createElement('button');
     button.id = 'button1';
-    button.textContent = 'Start all';
+    button.textContent = 'Run All Cells';
 
     controlPanel.appendChild(input);
     controlPanel.appendChild(button);
