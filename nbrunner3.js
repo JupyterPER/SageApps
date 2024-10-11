@@ -232,6 +232,32 @@ function setupRunAllCells() {
     document.getElementById('button1').addEventListener('click', runAllCells);
 }
 
+function removeDuplicateStyles() {
+    // Get all style elements
+    const styles = document.getElementsByTagName('style');
+    
+    // Create a Set to store unique style contents
+    const uniqueStyles = new Set();
+    
+    // Iterate through the styles in reverse order
+    for (let i = styles.length - 1; i >= 0; i--) {
+        const style = styles[i];
+        const styleContent = style.textContent.trim();
+        
+        // Check if this style content has been seen before
+        if (uniqueStyles.has(styleContent)) {
+            // If it's a duplicate, remove it
+            style.parentNode.removeChild(style);
+        } else {
+            // If it's unique, add it to the Set
+            uniqueStyles.add(styleContent);
+        }
+    }
+}
+
+// Run the function when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', removeDuplicateStyles);
+
 function removeCellEditingButtons() {
     removeNewCellUpButtons();
     removeNewCellDownButtons();
@@ -353,38 +379,41 @@ function toggleNavbar() {
 
 
 function addDeleteButtonsToCodeCells() {
-    // First, add the styles
-    const styles = `
-        <style>
-            .delete-button {
-                position: absolute;
-                top: -40px;
-                right: 5px;
-                padding: 5px 10px;
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-                border-radius: 3px;
-                cursor: pointer;
-                font-size: 12px;
-            }
-            .delete-button:hover {
-                background-color: #e0e0e0;
-            }
-        </style>
-    `;
-    document.head.insertAdjacentHTML('beforeend', styles);
-
-    // Then, add the delete buttons
+    // Get all code cells
     const cells = document.querySelectorAll('.nb-cell.nb-code-cell');
+    
     cells.forEach(cell => {
         if (!cell.querySelector('.delete-button')) {
+            // Create delete button
             const deleteButton = document.createElement('button');
             deleteButton.className = 'delete-button';
             deleteButton.textContent = 'Delete';
             
+            // Set inline styles for the delete button
+            Object.assign(deleteButton.style, {
+                position: 'absolute',
+                top: '-40px',
+                right: '5px',
+                padding: '5px 10px',
+                backgroundColor: '#f0f0f0',
+                border: '1px solid #ccc',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontSize: '12px'
+            });
+            
+            // Add hover effect using event listeners
+            deleteButton.addEventListener('mouseover', () => {
+                deleteButton.style.backgroundColor = '#e0e0e0';
+            });
+            deleteButton.addEventListener('mouseout', () => {
+                deleteButton.style.backgroundColor = '#f0f0f0';
+            });
+            
             // Ensure the cell has a relative positioning
             cell.style.position = 'relative';
             
+            // Append the delete button to the cell
             cell.appendChild(deleteButton);
         }
     });
@@ -553,4 +582,3 @@ document.addEventListener('DOMContentLoaded', function() {
     navbar.style.visibility = 'visible';
     navbar.style.opacity = '1';
 });
-
