@@ -10,7 +10,7 @@ function makeMenu() {
         a = "de" == e ? "Speichern" : "Save",
         s = '<a href="#" role="button" id="read-button" class="btn btn-primary" onclick="setView()">' + ("de" == e ? "Lesen" : "Read") + "</a>",
         o = '<a href="#" role="button" id="execute-button" class="btn btn-primary" onclick="setExecute()">' + ("de" == e ? "AusfĂĽhren" : "Execute") + "</a>",
-        l = '<div id="navbar">' + ("Exec" == playerConfig.panes ? "" : s + o) + '<a href="#" role="button" class="btn btn-primary" onclick="toggleInput()">' + t + '</a>\n  <a href="#" role="button" class="btn btn-primary" onclick="saveHtml()">' + a + "</a>" + (playerConfig.linked ? '<a id="evalWarning" href="#" role="button" class="btn btn-warning" style="display: none;">' + n + "</a>" : "") + '\n  <img src="' + playerConfig.playerPath + '/resources/logo.png" width="45px"\n    style="float:right;"></img>\n  </div>';
+        l = '<div id="navbar">' + ("Exec" == playerConfig.panes ? "" : s + o) + '<a href="#" role="button" class="btn btn-primary" onclick="toggleInput()">' + t + '</a>\n  <a href="#" role="button" class="btn btn-primary" onclick="saveHtml()">' + a + "</a>" + (playerConfig.linked ? '<a id="evalWarning" href="#" role="button" class="btn btn-warning" style="display: none;">' + n + "</a>" : "") + '\n  <img style="float: right; margin-right: 70px;" src="https://www.upjs.sk/app/uploads/sites/10/2023/02/PriF_ENG_frame.svg" alt="PriF ENG frame" height="53" /></img>\n  </div>';
     $("body").prepend(l), $("#main").addClass("belowMenu")
 }
 
@@ -206,6 +206,8 @@ function localize() {
         e[s][t] && ("html" == e[s].type ? $(s).html(e[s][t]) : $(s).attr(e[s].type, e[s][t]))
     }
 }
+
+
 function setupRunAllCells() {
     function getElementsByXPath(xpath) {
         const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
@@ -230,25 +232,324 @@ function setupRunAllCells() {
     document.getElementById('button1').addEventListener('click', runAllCells);
 }
 
+function removeCellEditingButtons() {
+    removeNewCellUpButtons();
+    removeNewCellDownButtons();
+    removeDeleteCellButtons();
+}
+
+let editMode = true;
+
+function toggleEditMode() {
+    if (editMode) {
+		refreshNewCellButtons();
+        editMode = false;
+    } else {
+		removeCellEditingButtons();
+        editMode = true;
+    }
+}
+
 function addControlPanel() {
     const controlPanel = document.createElement('div');
     controlPanel.id = 'controls';
-    controlPanel.style.cssText = 'position: fixed; top: 60px; left: 10px; z-index: 200;';
+    controlPanel.style.cssText = `
+        position: fixed;
+        top: 0px;
+        right: 0px;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 5px;
+        padding: 5px;
+        background-color: #1c8c4c;
+        border-bottom-left-radius: 5px;
+        outline: none;
+    `;
+
+    const commonStyles = `
+        width: 100px;
+        padding: 5px;
+        font-size: 12px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        background-color: #f8f8f8;
+        color: #333;
+    `;
 
     const input = document.createElement('input');
     input.type = 'number';
     input.id = 'delay';
-    input.placeholder = 'Insert time between computations in ms';
-    input.min = '0';
-    input.value = '1000';
+    input.placeholder = 'Step (ms)';
+    input.min = '1';
+    input.value = '900';
+    input.style.cssText = commonStyles;
 
-    const button = document.createElement('button');
-    button.id = 'button1';
-    button.textContent = 'Run All Cells';
+    const runButton = document.createElement('button');
+    runButton.id = 'button1';
+    runButton.textContent = 'Run All Cells';
+    runButton.style.cssText = `
+        ${commonStyles}
+        cursor: pointer;
+    `;
 
-    controlPanel.appendChild(input);
-    controlPanel.appendChild(button);
+    const toggleNavbarButton = document.createElement('button');
+    toggleNavbarButton.id = 'toggleNavbar';
+    toggleNavbarButton.textContent = 'Toggle Bar';
+    toggleNavbarButton.onclick = toggleNavbar;
+    toggleNavbarButton.style.cssText = `
+        ${commonStyles}
+        cursor: pointer;
+    `;
 
+    const editCellsButton = document.createElement('button');
+    editCellsButton.id = 'editCells';
+    editCellsButton.textContent = 'Edit Cells';
+    editCellsButton.onclick = toggleEditMode;
+    editCellsButton.style.cssText = `
+        ${commonStyles}
+        cursor: pointer;
+    `;
+
+    const hoverEffect = (event) => {
+        event.target.style.backgroundColor = '#e0e0e0';
+    };
+
+    const resetEffect = (event) => {
+        event.target.style.backgroundColor = '#f8f8f8';
+    };
+
+    runButton.onmouseover = hoverEffect;
+    runButton.onmouseout = resetEffect;
+    toggleNavbarButton.onmouseover = hoverEffect;
+    toggleNavbarButton.onmouseout = resetEffect;
+    editCellsButton.onmouseover = hoverEffect;
+    editCellsButton.onmouseout = resetEffect;
+
+    controlPanel.appendChild(runButton);
+	controlPanel.appendChild(input);
+    controlPanel.appendChild(toggleNavbarButton);
+    controlPanel.appendChild(editCellsButton);
+	
     // Insert the control panel at the beginning of the body
     document.body.insertBefore(controlPanel, document.body.firstChild);
 }
+
+function toggleNavbar() {
+    const navbar = document.getElementById('navbar');
+    
+    if (navbar.style.display === 'none') {
+        navbar.style.display = '';
+        navbar.style.visibility = 'visible';
+        navbar.style.opacity = '1';
+    } else {
+        navbar.style.display = 'none';
+        navbar.style.visibility = 'hidden';
+        navbar.style.opacity = '0';
+    }
+}
+
+
+
+function addDeleteButtonsToCodeCells() {
+    // First, add the styles
+    const styles = `
+        <style>
+            .delete-button {
+                position: absolute;
+                top: -40px;
+                right: 5px;
+                padding: 5px 10px;
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 12px;
+            }
+            .delete-button:hover {
+                background-color: #e0e0e0;
+            }
+        </style>
+    `;
+    document.head.insertAdjacentHTML('beforeend', styles);
+
+    // Then, add the delete buttons
+    const cells = document.querySelectorAll('.nb-cell.nb-code-cell');
+    cells.forEach(cell => {
+        if (!cell.querySelector('.delete-button')) {
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-button';
+            deleteButton.textContent = 'Delete';
+            
+            // Ensure the cell has a relative positioning
+            cell.style.position = 'relative';
+            
+            cell.appendChild(deleteButton);
+        }
+    });
+}
+
+function deleteCell(event) {
+    if (event.target.classList.contains('delete-button')) {
+        const cellToDelete = event.target.closest('.nb-cell.nb-code-cell');
+		
+        if (cellToDelete) {
+            cellToDelete.remove();
+			refreshNewCellButtons();
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {document.body.addEventListener('click', deleteCell);
+})
+
+
+		
+
+
+function generateNewCellUpButtonHTML() {
+    const styles = `
+        display: block;
+        margin: 10px auto;
+        padding: 5px 10px;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+    `;
+
+    const hoverStyles = `
+        this.style.backgroundColor = '#e0e0e0';
+    `;
+
+    const resetStyles = `
+        this.style.backgroundColor = '#f0f0f0';
+    `;
+
+    return `<button class="new-cell-up-button" style="${styles}" onmouseover="${hoverStyles}" onmouseout="${resetStyles}">New Cell Up</button>`;
+}
+
+function generateNewCellDownButtonHTML() {
+    const styles = `
+        display: block;
+        margin: 10px auto;
+        padding: 5px 10px;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+		position: relative;
+        top: -30px;
+    `;
+
+    const hoverStyles = `
+        this.style.backgroundColor = '#e0e0e0';
+    `;
+
+    const resetStyles = `
+        this.style.backgroundColor = '#f0f0f0';
+    `;
+
+    return `<button class="new-cell-down-button" style="${styles}" onmouseover="${hoverStyles}" onmouseout="${resetStyles}">New Cell Down</button>`;
+}
+
+
+function addNewCellUpButtons() {
+    $('.nb-cell.nb-code-cell').before(generateNewCellUpButtonHTML());
+}
+
+function addNewCellDownButtons() {
+    $('.nb-cell.nb-code-cell').after(generateNewCellDownButtonHTML());
+}
+
+function removeNewCellUpButtons() {
+    $('.new-cell-up-button').remove();
+}
+
+function removeNewCellDownButtons() {
+    $('.new-cell-down-button').remove();
+}
+
+function removeDeleteCellButtons() {
+    $('.delete-button').remove();
+}
+
+function refreshNewCellButtons() {
+	removeDeleteCellButtons();
+	addDeleteButtonsToCodeCells();
+	removeNewCellUpButtons();
+    addNewCellUpButtons();
+	removeNewCellDownButtons();
+    addNewCellDownButtons();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	document.body.addEventListener('click', replaceNewCellUpButton, refreshNewCellButtons);
+})
+
+document.addEventListener('DOMContentLoaded', function() {
+	document.body.addEventListener('click', replaceNewCellDownButton, refreshNewCellButtons);
+})
+
+
+
+function createBlankSageCell() {
+    const codeCell = document.createElement('div');
+    codeCell.className = 'nb-cell nb-code-cell';
+
+    return codeCell;
+}
+function replaceNewCellUpButton(event) {
+    if (event.target.classList.contains('new-cell-up-button')) {
+        const button = event.target;
+        const newCell = createBlankSageCell();
+        
+        button.parentNode.insertBefore(newCell, button);
+
+        // Reprocess the notebook to ensure all cells are properly linked
+        reprocessNotebook();
+		
+    }
+}
+
+function replaceNewCellDownButton(event) {
+    if (event.target.classList.contains('new-cell-down-button')) {
+        const button = event.target;
+        const newCell = createBlankSageCell();
+        
+        button.parentNode.insertBefore(newCell, button);
+
+        // Reprocess the notebook to ensure all cells are properly linked
+        reprocessNotebook();
+		
+    }
+}
+function reprocessNotebook() {
+  requestAnimationFrame(() => {
+    // Standardize all cells, including newly created ones
+    saveAddSageCells(".nb-code-cell", ".sagecell_input,.sagecell_output");
+    
+    // Remove zero-width spaces from all scripts
+    $("script").each(function() {
+        $(this).html($(this).html().replace(/\u200B/g, ""));
+    });
+
+    // Re-initialize the notebook
+    localize();
+    loadStatus();
+    makeSageCells(playerConfig);
+    launchPlayer();
+    addControlPanel();
+    setupRunAllCells();
+	refreshNewCellButtons();
+  });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const navbar = document.getElementById('navbar');
+    navbar.style.display = '';
+    navbar.style.visibility = 'visible';
+    navbar.style.opacity = '1';
+});
