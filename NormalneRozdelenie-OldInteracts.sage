@@ -21,7 +21,7 @@ S1 = lambda vzorka: np.std(vzorka, ddof = 1)
 
 # vlastny styl grafov
 import matplotlib.pyplot as plt
-plt.style.use('seaborn-whitegrid')
+plt.style.use('seaborn-v0_8-whitegrid')
 boxstyle = {'boxstyle':'round', 'fc':'w'}
 get_ipython().run_line_magic('matplotlib', 'inline')
 
