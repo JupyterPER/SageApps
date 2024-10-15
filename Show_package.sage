@@ -7,9 +7,12 @@ import re
 # definition of Levi-Civita symbol
 eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
 # multiple independent symbolic equations solving
-msolve = lambda eqs, var: [solve(equation==0,var) for equation in eqs]
+rsolve = lambda equation, variable: [sol for sol in solve(equation,variable) if variable.subs(sol).is_real()]
+msolve = lambda eqs, var, domain='real': [
+    rsolve(equation, var) if domain == 'real' else solve(equation, var) 
+    for equation in eqs]
 # symbolic vector equations solving
-vsolve = lambda vector, vars: solve([component == 0 for component in vector], vars)
+vsolve = lambda vector, vars: solve([component for component in vector], vars)
 
 def showURL(url, ht=560):
 
