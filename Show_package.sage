@@ -6,9 +6,9 @@ import re
 
 # definition of Levi-Civita symbol
 eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
-# multiple independent equations solving
-msolve = lambda eqs, var: [solve(equation==0,var) for zlozka in eqs]
-# vector equations solving
+# multiple independent symbolic equations solving
+msolve = lambda eqs, var: [solve(equation==0,var) for equation in eqs]
+# symbolic vector equations solving
 vsolve = lambda vector, vars: solve([component == 0 for component in vector], vars)
 
 def showURL(url, ht=560):
