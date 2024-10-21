@@ -34,9 +34,18 @@ function saveHtml() {
             preview.innerHTML = texme.render(input.getAttribute('data-original') || '');
         }
     });
-	newCss();
     saveAddSageCells(".nb-code-cell", ".sagecell_input,.sagecell_output");
     $("script").html().replace(/\u200B/g, "");
+	
+	// Replace the CSS link
+	const head = $("head");
+	const oldLink = head.find('link[href="https://dahn-research.eu/nbplayer/css/nbplayer.css"]');
+	if (oldLink.length > 0) {
+		oldLink.attr('href', 'https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main/nbplayer5.css');
+		console.log('CSS link replaced successfully.');
+	} else {
+		console.log('Original CSS link not found.');
+	}
 	
 
     var e = new Blob(["<!DOCTYPE html>\n<html>\n<head>" + $("head").html() + '</head>\n<body>\n<script src="https://cdn.jsdelivr.net/npm/texme@1.2.2"></script>\n<div id="main">' + $("#main").html() + '</div>\n  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"><\/script>\n  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"><\/script>\n  <script src="https://sagecell.sagemath.org/embedded_sagecell.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/vendor/js/FileSaver.min.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/nbplayerConfig.js"><\/script>\n  <script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main/nbrunner5.js"><\/script>\n  <script>\n    playerConfig=' + JSON.stringify(playerConfig) + ";\n    playerMode=" + JSON.stringify(playerMode) + ";\n    makeMenu();\n    localize();\n    loadStatus();\n    makeSageCells(playerConfig);\n    launchPlayer();\n    addControlPanel();\n    setupRunAllCells();\n    window.onload = initializeMarkdownCells;\n  <\/script>\n</body>\n</html>"], {
@@ -727,7 +736,8 @@ function createCodeCell(content) {
 }
 
 function convertToCode(markdownCell) {
-    const markdownText = markdownCell.querySelector('textarea').value;
+    const markdownTextRaw = markdownCell.querySelector('textarea').value;
+	markdownText = markdownTextRaw.replace(/[\u200B]/g, '');
     const codeCell = createCodeCell(markdownText);
     const uniqueId = 'code-cell-' + Date.now();
     codeCell.id = uniqueId;
@@ -771,21 +781,3 @@ function cleanupComputeDivs() {
 
 // Initialize cells when the page loads
 window.addEventListener('load', initializeCells);
-
-function newCss() {
-    const head = document.head;
-    const oldLink = head.querySelector('link[href="https://dahn-research.eu/nbplayer/css/nbplayer.css"]');
-
-    if (oldLink) {
-        const newLink = document.createElement('link');
-        newLink.rel = 'stylesheet';
-        newLink.href = 'https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main/nbplayer5.css';
-
-        head.replaceChild(newLink, oldLink);
-        console.log('CSS link replaced successfully.');
-    } else {
-        console.log('Original CSS link not found.');
-    }
-};
-
-
