@@ -316,27 +316,23 @@ def AI_ask(replace=True, language=None,model=None,print_prompt=False):
     get_ipython().set_next_input(AIresult, replace=replace)
     return #print(AIresult)
 
-def AI_complete(replace=True, language=None, output=False, model=None, print_prompt=False, custom_code=None, api_key = ''):
+def AI_complete(replace=True, language=None, output=False, model=None, print_prompt=False, NBplayer_code=None, api_key = ''):
     
-    # setting AI parameters
-    # Call the helper function to check AI parameters
-    # if custom_code!=False:
-    #    model, language = check_AI_parameters(model, language)
-    
-    # If model or language are None, nothing is done (indicating an error)
-    if model is None or language is None:
-        return
-    
-    # prompt for Complete
-    inputs = get_ipython().user_ns['In']
-    #print(inputs[0:-2])
-    message = add_language(priming_ai_assistant['Complete'], language)
-    if custom_code:
-        previous_code = 'In['.join(custom_code.split('In[')[:-2])
-        instructions = extract_last_in(custom_code)
+    if NBplayer_code==None:
+        # setting AI parameters
+        # Call the helper function to check AI parameters
+        model, language = check_AI_parameters(model, language)
         
+        # If model or language are None, nothing is done (indicating an error)
+        if model is None or language is None:
+            return
         
-    else:
+        # prompt for Complete
+        inputs = get_ipython().user_ns['In']
+        #print(inputs[0:-2])
+        message = add_language(priming_ai_assistant['Complete'], language)
+            
+            
         previous_code ='''
         **Here is the background information about the code:**
         *PREVIOUS CODE:*
@@ -344,23 +340,34 @@ def AI_complete(replace=True, language=None, output=False, model=None, print_pro
         instructions  = '''
         **Here are INSTRUCTIONS for completing code:**
         ''' + '\n'+ inputs[-2]
-    if output:
-        outputs = get_ipython().user_ns['Out']
-        output_str = '''
-        *OUTPUT:*
-        '''+'\n'+ all_outputs(outputs)
-        prompt = message + previous_code +  output_str + instructions
+        if output:
+            outputs = get_ipython().user_ns['Out']
+            output_str = '''
+            *OUTPUT:*
+            '''+'\n'+ all_outputs(outputs)
+            prompt = message + previous_code +  output_str + instructions
+        else:
+            prompt = message + previous_code + instructions 
+        
+        if print_prompt: print(prompt)
+        
+        # AI processing
+        AIresult = AI_generate(prompt, model=model, api_key=api_key)
+        AIresult = AIresult.replace('```python','')
+        AIresult = AIresult.replace('```','')
+        get_ipython().set_next_input(AIresult, replace=replace)
+        return #print(AIresult)
     else:
-        prompt = message + previous_code + instructions 
-    
-    if print_prompt: print(prompt)
-    
-    # AI processing
-    AIresult = AI_generate(prompt, model=model, api_key=api_key)
-    AIresult = AIresult.replace('```python','')
-    AIresult = AIresult.replace('```','')
-    get_ipython().set_next_input(AIresult, replace=replace)
-    return #print(AIresult)
+        previous_code = 'In['.join(NBplayer_code.split('In[')[:-2])
+        instructions = extract_last_in(NBplayer_code)
+        message = add_language(priming_ai_assistant['Complete'], language)
+        prompt = message + previous_code + instructions
+        # AI processing
+        AIresult = AI_generate(prompt, model=model, api_key=api_key)
+        AIresult = AIresult.replace('```python','')
+        AIresult = AIresult.replace('```','')
+        return AIresult
+        
 
 
 def AI_format(n=-2, replace=True, language=None, model=None, print_prompt=False):
