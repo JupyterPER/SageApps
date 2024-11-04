@@ -320,7 +320,8 @@ def AI_complete(replace=True, language=None, output=False, model=None, print_pro
     
     # setting AI parameters
     # Call the helper function to check AI parameters
-    model, language = check_AI_parameters(model, language)
+    if custom_code!=False:
+        model, language = check_AI_parameters(model, language)
     
     # If model or language are None, nothing is done (indicating an error)
     if model is None or language is None:
