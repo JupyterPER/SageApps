@@ -333,7 +333,7 @@ def AI_complete(replace=True, language=None, output=False, model=None, print_pro
     message = add_language(priming_ai_assistant['Complete'], language)
     if custom_code:
         previous_code = 'In['.join(custom_code.split('In[')[:-2])
-        instructions = exctract_last_in(custom_code)
+        instructions = extract_last_in(custom_code)
         
         
     else:
