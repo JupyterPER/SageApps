@@ -537,7 +537,7 @@ def AI_explain(replace=True, addition='', language=None, previous_code=True, mod
             
         # AI processing
         AIresult = AI_generate(prompt, model=model, api_key=api_key)
-        return "md('''\n\n{}\n\n''')".format(AIresult)
+        return "\n{}\n".format(AIresult)
 
 def AI_review(replace=True, addition='', language=None, previous_code=False, model=None, print_prompt=False):
 
