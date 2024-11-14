@@ -366,7 +366,7 @@ def AI_complete(replace=True, language=None, output=False, model=None, print_pro
         AIresult = AI_generate(prompt, model=model, api_key=api_key)
         AIresult = AIresult.replace('```python','')
         AIresult = AIresult.replace('```','')
-        retrurn AIresult
+        return AIresult
     
 def AI_format(n=-2, replace=True, language=None, model=None, print_prompt=False, NBplayer_code=None, api_key=''):
     
