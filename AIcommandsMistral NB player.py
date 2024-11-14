@@ -318,7 +318,7 @@ def AI_ask(replace=True, language=None,model=None,print_prompt=False):
 
 def AI_complete(replace=True, language=None, output=False, model=None, print_prompt=False, NBplayer_code=None, api_key = ''):
     
-    if NBplayer_code==None
+    if NBplayer_code==None:
         # setting AI parameters
         # Call the helper function to check AI parameters
         model, language = check_AI_parameters(model, language)
