@@ -318,7 +318,7 @@ def AI_ask(replace=True, language=None,model=None,print_prompt=False):
 
 def AI_complete(replace=True, language=None, output=False, model=None, print_prompt=False, NBplayer_code=None, api_key = ''):
     
-    if NBplayer_code==None:
+    if NBplayer_code==None
         # setting AI parameters
         # Call the helper function to check AI parameters
         model, language = check_AI_parameters(model, language)
@@ -366,37 +366,44 @@ def AI_complete(replace=True, language=None, output=False, model=None, print_pro
         AIresult = AI_generate(prompt, model=model, api_key=api_key)
         AIresult = AIresult.replace('```python','')
         AIresult = AIresult.replace('```','')
-        return AIresult
+        retrurn AIresult
+    
+def AI_format(n=-2, replace=True, language=None, model=None, print_prompt=False, NBplayer_code=None, api_key=''):
+    
+    if NBplayer_code==None:
+        # setting AI parameters
+        # Call the helper function to check AI parameters
+        model, language = check_AI_parameters(model, language)
         
-
-
-def AI_format(n=-2, replace=True, language=None, model=None, print_prompt=False):
-
-    # setting AI parameters
-    # Call the helper function to check AI parameters
-    model, language = check_AI_parameters(model, language)
-    
-    # If model or language are None, nothing is done (indicating an error)
-    if model is None or language is None:
-        return
-
-    
-    # prompt for Format
-    inputs = get_ipython().user_ns['In']
-    message = add_language(priming_ai_assistant['Format'], language)
-    last_code ='''
-    **Here is the code of the LAST CELL:**
-    '''+'\n'+ inputs[n]
-    prompt = message + last_code
-    
-    if print_prompt: print(prompt)
-    
-    # AI processing
-    AIresult = AI_generate(prompt, model=model)
-    AIresult = AIresult.replace('```python','')
-    AIresult = AIresult.replace('```','')
-    get_ipython().set_next_input(AIresult, replace=replace)
-    return #print(AIresult)
+        # If model or language are None, nothing is done (indicating an error)
+        if model is None or language is None:
+            return
+        
+        # prompt for Format
+        inputs = get_ipython().user_ns['In']
+        message = add_language(priming_ai_assistant['Format'], language)
+        last_code ='''
+        **Here is the code of the LAST CELL:**
+        '''+'\n'+ inputs[n]
+        prompt = message + last_code
+        
+        if print_prompt: print(prompt)
+        
+        # AI processing
+        AIresult = AI_generate(prompt, model=model, api_key=api_key)
+        AIresult = AIresult.replace('```python','')
+        AIresult = AIresult.replace('```','')
+        get_ipython().set_next_input(AIresult, replace=replace)
+        return #print(AIresult)
+    else:
+        message = add_language(priming_ai_assistant['Format'], language)
+        last_code = extract_last_in(NBplayer_code)
+        prompt = message + last_code
+        # AI processing
+        AIresult = AI_generate(prompt, model=model, api_key=api_key)
+        AIresult = AIresult.replace('```python','')
+        AIresult = AIresult.replace('```','')
+        return AIresult
 
 def AI_debug(replace=True, language=None, model=None, print_prompt=False):
 
@@ -469,6 +476,68 @@ def AI_explain(replace=True, addition='', language=None, previous_code=True, mod
     AIresult = "md('''\n\n{}\n\n''')".format(AI_generate(prompt, model=model))
     get_ipython().set_next_input(AIresult, replace=replace)
     return #print(AIresult)
+    
+def AI_explain(replace=True, addition='', language=None, previous_code=True, model=None, print_prompt=False, NBplayer_code=None, api_key=''):
+    
+    if NBplayer_code==None:
+        # Call the helper function to check AI parameters
+        model, language = check_AI_parameters(model, language)
+        
+        # If model or language are None, nothing is done (indicating an error)
+        if model is None or language is None:
+            return
+        
+        # prompt for Format
+        inputs = get_ipython().user_ns['In']
+        outputs = get_ipython().user_ns['Out']
+        message = add_language(priming_ai_assistant['Explain'], language)
+        focal_code ='''
+        *FOCAL CELL:*
+        '''+'\n'+ inputs[-2]
+           
+        if previous_code:
+            prev_code_str ='''
+            *PREVIOUS CODE:*
+            '''+'\n'+ prev_code(inputs[0:-2])
+            outputs_str = '''
+            *OUTPUTS:*
+            '''+'\n'+ all_outputs(outputs)
+            prompt = message + prev_code_str + focal_code + outputs_str
+        else:
+            prompt = message + focal_code
+            
+        if addition != '':
+            add_prompt ='''
+            *ADDITIONAL REQUEST:*
+            '''+'\n'+ addition
+            prompt += addition
+            
+        if print_prompt: print(prompt)
+        
+        # AI processing
+        AIresult = "md('''\n\n{}\n\n''')".format(AI_generate(prompt, model=model, api_key=api_key))
+        get_ipython().set_next_input(AIresult, replace=replace)
+        return #print(AIresult)
+    
+    else:
+        message = add_language(priming_ai_assistant['Explain'], language)
+        if previous_code:
+            prev_code_str = 'In['.join(NBplayer_code.split('In[')[:-2])
+            focal_code = extract_last_in(NBplayer_code)
+            prompt = message + prev_code_str + focal_code
+        else:
+            focal_code = extract_last_in(NBplayer_code)
+            prompt = message + focal_code
+            
+        if addition != '':
+            add_prompt ='''
+            *ADDITIONAL REQUEST:*
+            '''+'\n'+ addition
+            prompt += addition
+            
+        # AI processing
+        AIresult = AI_generate(prompt, model=model, api_key=api_key)
+        return "md('''\n\n{}\n\n''')".format(AIresult)
 
 def AI_review(replace=True, addition='', language=None, previous_code=False, model=None, print_prompt=False):
 
