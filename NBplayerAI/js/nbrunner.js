@@ -404,6 +404,12 @@ function addControlPanel() {
 	
 	controlPanel.appendChild(toggleNavbarButton);
 	document.body.insertBefore(controlPanel, main);
+	let htmlContent = document.documentElement.innerHTML;
+    htmlContent = htmlContent.replace(
+      '<link rel="stylesheet" href="https://dahn-research.eu/nbplayer/css/nbplayer.css">',
+      '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main//NBplayerAI/css/nbplayer.css">'
+    );
+    document.documentElement.innerHTML = htmlContent;
 }
 
 
