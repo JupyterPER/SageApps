@@ -1,0 +1,68 @@
+.controls {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    padding: 5px;
+    background-color: #1c8c4c;
+    border-bottom-left-radius: 5px;
+    outline: none;
+}
+
+.control-item {
+    width: 100px;
+    padding: 5px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #f8f8f8;
+    color: #333;
+}
+
+.control-button {
+    cursor: pointer;
+}
+
+.control-button:hover {
+    background-color: #e0e0e0;
+}
+
+.delete-button {
+    position: absolute;
+    top: -40px;
+    right: 5px;
+    padding: 5px 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.delete-button:hover {
+    background-color: #e0e0e0;
+}
+
+.new-cell-button {
+    display: block;
+    margin: 10px auto;
+    padding: 5px 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.new-cell-button:hover {
+    background-color: #e0e0e0;
+}
+
+.new-cell-down-button {
+    position: relative;
+    top: -30px;
+}
