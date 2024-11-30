@@ -6,6 +6,7 @@ import re
 
 # definition of Levi-Civita symbol
 eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
+
 # multiple independent symbolic equations solving
 rsolve = lambda equation, variable: [sol for sol in solve(equation,variable) if variable.subs(sol).is_real()]
 msolve = lambda eqs, var, domain='real': [
@@ -13,6 +14,22 @@ msolve = lambda eqs, var, domain='real': [
     for equation in eqs]
 # symbolic vector equations solving
 vsolve = lambda vector, vars: solve([component for component in vector], vars)
+
+# https://docs.sympy.org/latest/modules/solvers/pde.html
+def separate(pde,u,X,Y):
+    from sympy import pde_separate
+    sep = pde_separate(pde._sympy_(), u._sympy_(), [X._sympy_(), Y._sympy_()])
+    return sep[0]._sage_() == sep[1]._sage_()  
+
+def pde_type(pde):
+    from sympy.solvers.pde import classify_pde
+    from IPython.display import Markdown
+    return Markdown(classify_pde(pde._sympy_())[0])
+
+def pdesolve(pde):
+    from sympy.solvers.pde import pdsolve 
+    sol = pdsolve(pde._sympy_())._sage_()
+    return sol
 
 def showURL(url, ht=560):
 
