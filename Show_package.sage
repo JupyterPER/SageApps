@@ -32,7 +32,7 @@ def pdesolve(pde):
     sol = pdsolve(pde._sympy_())._sage_()
     return sol
 
-def pde_type(DD):
+def p2de_type(DD):
     if   DD == 0: print(f'Discriminant={DD}, parabolic')
     elif DD > 0 : print(f'Discriminant={DD} > 0, hyperbolic')
     else        : print(f'Discriminant={DD} < 0, eliptic')    
