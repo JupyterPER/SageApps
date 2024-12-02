@@ -37,6 +37,11 @@ def pde_type(DD):
     elif DD > 0 : print(f'Discriminant={DD} > 0, hyperbolic')
     else        : print(f'Discriminant={DD} < 0, eliptic')    
 
+def separate_SchE(SchE, psi, phi, T):
+    phix = phi.diff(x)
+    Hphi = var('Hphi', latex_name=r'H\varphi(\xi)')
+    sep = separate(SchE.subs(Hpsi == psi.diff(x)), psi, phi, T)
+    return sep.subs(phix == Hphi)
 
 def showURL(url, ht=560):
 
