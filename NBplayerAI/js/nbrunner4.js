@@ -794,6 +794,7 @@ function removeControlBar(cell) {
 function createButtonIco(text, onClick, iconType) {
   const button = document.createElement('button');
   button.innerHTML = iconDictionary[iconType];
+  button.title = text;
   button.addEventListener('click', onClick);
   return button;
 }
