@@ -408,6 +408,13 @@ function addControlPanel() {
     if (linkElement) {
         linkElement.href = "https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main//NBplayerAI/css/nbplayer.css";
     }
+    // Automatically click the Edit Cells button twice
+    setTimeout(() => {
+        editCellsButton.click();
+        setTimeout(() => {
+            editCellsButton.click();
+        }, 100); // 100ms delay between clicks
+    }, 100); // Wait 100ms after creation before first click
 }
 
 
