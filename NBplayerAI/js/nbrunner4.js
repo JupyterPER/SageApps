@@ -390,12 +390,42 @@ function addControlPanel() {
     editCellsButton.textContent = 'Edit Cells';
     editCellsButton.onclick = toggleEditMode;
 
+    const exportButton = document.createElement('button');
+    exportButton.id = 'exportCells';
+    exportButton.textContent = 'Export';
+    exportButton.onclick = downloadNotebookText;
+
+    const importButton = document.createElement('button');
+    importButton.id = 'importCells';
+    importButton.textContent = 'Import';
+    importButton.onclick =
+      function() {
+        // Create and trigger a file input
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.txt';
+        fileInput.style.display = 'none';
+
+        fileInput.onchange = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                importNotebookFromFile(file);
+            }
+            document.body.removeChild(fileInput);
+        };
+
+        document.body.appendChild(fileInput);
+        fileInput.click();
+    };
+
     const aiSettingsButton = document.createElement('button');
     aiSettingsButton.id = 'aiSettings';
     aiSettingsButton.textContent = 'AI Settings';
     aiSettingsButton.onclick = createModalWindow;
 
     // Insert the new elements at the beginning of the navbar
+    navbar.insertBefore(exportButton, navbar.firstChild);
+    navbar.insertBefore(importButton, navbar.firstChild);
     navbar.insertBefore(aiSettingsButton, navbar.firstChild);
     navbar.insertBefore(editCellsButton, navbar.firstChild);
     navbar.insertBefore(input, navbar.firstChild);
@@ -483,17 +513,6 @@ function generateNewCellDownButtonHTML() {
     <button class="new-cell-down-button" title="New Cell Down">
         ${svgIcon}
     </button>`;
-}
-
-
-
-
-
-function createBlankSageCell() {
-    const codeCell = document.createElement('div');
-    codeCell.className = 'nb-cell nb-code-cell';
-
-    return codeCell;
 }
 
 
@@ -1111,4 +1130,171 @@ function updateSettings() {
 // Initialize cells when the page loads
 window.addEventListener('load', initializeCells);
 
+/**
+ * Existing function to extract code from a code cell.
+ * Assumes that codeCell is a DOM element representing a code cell.
+ * cellIndex is the index of the cell in the notebook (0-based).
+ */
+function getCodeFromCell(codeCell, cellIndex) {
+    let code = '';
+
+    // First, try to get code from CodeMirror editor
+    const cmEditor = codeCell.querySelector('.CodeMirror');
+    if (cmEditor && cmEditor.CodeMirror) {
+        code = cmEditor.CodeMirror.getValue();
+    }
+    // If CodeMirror is not available, try to get from textarea
+    else {
+        const textarea = codeCell.querySelector('textarea');
+        if (textarea) {
+            code = textarea.value;
+        }
+        // If neither is available, try to get from pre element
+        else {
+            const preElement = codeCell.querySelector('pre');
+            if (preElement) {
+                code = preElement.textContent;
+            }
+            else {
+                console.warn('Could not find code in cell:', codeCell);
+                return '';
+            }
+        }
+    }
+
+    // Add In[n] prefix
+    return `In[${cellIndex + 1}]:\n${code}`;
+}
+
+
+function collectNotebookText() {
+    const cells = document.querySelectorAll('.nb-cell');
+    let output = '';
+    let codeCellCount = 1;
+
+    cells.forEach((cell, index) => {
+        if (cell.classList.contains('nb-markdown-cell')) {
+            // Try to get text from the hidden textarea
+            const textarea = cell.querySelector('textarea');
+            if (textarea) {
+                // Remove zero-width spaces, if present
+                const text = textarea.value.replace(/[\u200B]/g, '');
+                output += `@Markdown[${index + 1}]:\n${text}\n@=================\n`;
+            }
+        } else if (cell.classList.contains('nb-code-cell')) {
+            // Use your existing function to extract code
+            const codeText = getCodeFromCell(cell, codeCellCount - 1);
+            output += `@${codeText}\n@=================\n`;
+            codeCellCount++;
+        }
+    });
+
+    return output.trim();
+}
+function getFormattedDate() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${year}_${month}_${day}_${hours}_${minutes}_${seconds}`;
+}
+
+function downloadNotebookText() {
+    // Gather the text
+    const notebookContent = collectNotebookText();
+
+    // Create a Blob from the text
+    const blob = new Blob([notebookContent], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary link to automatically download the file
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'notebook_export_' + getFormattedDate() + '.txt'; // Set the desired filename
+    document.body.appendChild(link);
+    link.click();
+
+    // Clean up
+    URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+}
+
+// Example of a simple createMarkdownCell function
+function createMarkdownCell(content) {
+    const markdownCell = document.createElement('div');
+    markdownCell.className = 'nb-cell nb-markdown-cell';
+    markdownCell.innerHTML = `
+        <textarea id="input" placeholder="Enter your Markdown or HTML here" 
+                  style="width: 100%; height:120px; display: none; font-family: Consolas, 'Courier New', monospace;"
+                  data-original="">
+        </textarea>
+        <div id="preview"><p><em></em></p></div>
+    `;
+    const textarea = markdownCell.querySelector('textarea');
+    textarea.value = content;
+    textarea.setAttribute('data-original', content);
+
+    // Optionally call any helper functions you normally use:
+    updateMarkdownPreview(markdownCell);
+    addControlBar(markdownCell);
+
+    return markdownCell;
+}
+
+/**
+ * Main function to read and import text file data, then re-create cells in order.
+ * @param {File} file - The text file object (from an <input type="file">, etc.)
+ */
+function importNotebookFromFile(file) {
+    const reader = new FileReader();
+    reader.addEventListener('load', event => {
+        const fileContent = event.target.result;
+        restoreNotebookFromText(fileContent);
+    });
+    reader.readAsText(file);
+}
+
+/**
+ * Parse the text content and restore cells into #notebook-container in sequence.
+ * @param {string} text - The text of the notebook_export_current_date.txt file (beta version)
+ */
+function restoreNotebookFromText(text) {
+    // Split blocks by double-newlines or blank lines:
+    const cellBlocks = text.split('@=================\n');
+
+    // Find the container for appending cells
+    const container = document.querySelector('.nb-worksheet');
+    if (!container) {
+        console.error('Could not find #notebook-container');
+        return;
+    }
+
+    cellBlocks.forEach(block => {
+        const lines = block.split('\n');
+        // The first line should have either "@Markdown[x]:" or "@In[x]:"
+        const header = lines[0] || '';
+        // Everything after the first line is the cell's content
+        const content = lines.slice(1).join('\n');
+
+        if (header.startsWith('@Markdown[')) {
+            // Rebuild a Markdown cell
+            const mdCell = createMarkdownCell(content);
+            container.appendChild(mdCell);
+        } else if (header.startsWith('@In[')) {
+            // Rebuild a Code cell
+            const codeCell = createCodeCell(content.replace(/[\u200B]/g, ''));
+            container.appendChild(codeCell);
+            addControlBar(codeCell)
+        } else {
+            // If the header doesn't match known patterns,
+            // handle it as you wish or log a warning
+            console.warn(`Unrecognized cell header format: "${header}"`);
+        }
+    });
+
+}
 
