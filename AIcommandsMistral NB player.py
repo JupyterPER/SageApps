@@ -68,7 +68,7 @@ Here are the requirements for your explanation:
 
 # Load Mistral
 from mistralai import Mistral
-import os
+import re
 import time
 
 from IPython.display import IFrame, display, HTML, Markdown, display_html
