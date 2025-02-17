@@ -40,7 +40,7 @@ function saveHtml() {
 
     const apikey = typeof API_KEY !== 'undefined' ? JSON.stringify(API_KEY) : JSON.stringify('');
     const currentmodel = typeof CURRENT_MODEL !== 'undefined' ? JSON.stringify(CURRENT_MODEL) : JSON.stringify('');
-    var e = new Blob(["<!DOCTYPE html>\n<html>\n<head>" + $("head").html() + '</head>\n<body>\n<script src="https://cdn.jsdelivr.net/npm/texme@1.2.2"></script>\n<div id="main">' + $("#main").html() + '</div>\n  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"><\/script>\n  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"><\/script>\n  <script src="https://sagecell.sagemath.org/embedded_sagecell.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/vendor/js/FileSaver.min.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/nbplayerConfig.js"><\/script>\n  <script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main/NBplayerAI/js/nbrunner4.js"><\/script>\n  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main//NBplayerAI/css/nbplayer.css">\n  <script>\n    playerConfig=' + JSON.stringify(playerConfig) + ";\n    playerMode=" + JSON.stringify(playerMode) + ";\n    makeMenu();\n    localize();\n    loadStatus();\n    makeSageCells(playerConfig);\n    launchPlayer();\n    addControlPanel();\n    setupRunAllCells();\n    window.onload = initializeMarkdownCells;\n    let API_KEY=" + apikey + ";\n    let CURRENT_MODEL=" + currentmodel + ";\n  <\/script>\n</body>\n</html>"], {
+    var e = new Blob(["<!DOCTYPE html>\n<html>\n<head>" + $("head").html() + '</head>\n<body>\n<script src="https://cdn.jsdelivr.net/npm/texme@1.2.2"></script>\n<div id="main">' + $("#main").html() + '</div>\n  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"><\/script>\n  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"><\/script>\n  <script src="https://sagecell.sagemath.org/embedded_sagecell.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/vendor/js/FileSaver.min.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/nbplayerConfig.js"><\/script>\n  <script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main/NBplayerAI/js/nbrunner4.js"><\/script>\n  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>\n  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main//NBplayerAI/css/nbplayer.css">\n  <script>\n    playerConfig=' + JSON.stringify(playerConfig) + ";\n    playerMode=" + JSON.stringify(playerMode) + ";\n    makeMenu();\n    localize();\n    loadStatus();\n    makeSageCells(playerConfig);\n    launchPlayer();\n    addControlPanel();\n    setupRunAllCells();\n    window.onload = initializeMarkdownCells;\n    let API_KEY=" + apikey + ";\n    let CURRENT_MODEL=" + currentmodel + ";\n  <\/script>\n</body>\n</html>"], {
         type: "text/plain;charset=utf-8"
     });
     saveAs(e, playerConfig.name + ".html");
@@ -479,7 +479,7 @@ const iconDictionary = {
     <path class="jp-icon3" d="m8 8-4 4 4 4m8 0 4-4-4-4m-2-3-4 14" stroke="#616161" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>`,
     aiFormat: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" class=""><path class="jp-icon3" d="M14 4.182A4.136 4.136 0 0 1 16.9 3c1.087 0 2.13.425 2.899 1.182A4.01 4.01 0 0 1 21 7.037c0 1.068-.43 2.092-1.194 2.849L18.5 11.214l-5.8-5.71 1.287-1.31.012-.012Zm-2.717 2.763L6.186 12.13l2.175 2.141 5.063-5.218-2.141-2.108Zm-6.25 6.886-1.98 5.849a.992.992 0 0 0 .245 1.026 1.03 1.03 0 0 0 1.043.242L10.282 19l-5.25-5.168Zm6.954 4.01 5.096-5.186-2.218-2.183-5.063 5.218 2.185 2.15Z" fill="#616161"></path></svg>`,
     aiExplain: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" class=""><path class="jp-icon3" d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm9.008-3.018a1.502 1.502 0 0 1 2.522 1.159v.024a1.44 1.44 0 0 1-1.493 1.418 1 1 0 0 0-1.037.999V14a1 1 0 1 0 2 0v-.539a3.44 3.44 0 0 0 2.529-3.256 3.502 3.502 0 0 0-7-.255 1 1 0 0 0 2 .076c.014-.398.187-.774.48-1.044Zm.982 7.026a1 1 0 1 0 0 2H12a1 1 0 1 0 0-2h-.01Z" fill="#616161"></path></svg>`,
-
+    addEditExcel: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" class=""><path class="jp-icon3" stroke="#616161" stroke-width="2" d="M3 11h18M3 15h18m-9-4v8m-8 0h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Z"/></svg>`,
 };
 
 
@@ -692,16 +692,17 @@ function addControlBar(cell) {
         const convertToMarkdownBtn = createButton('Markdown', () => convertToMarkdown(cell));
         const aiCompleteBtn = createButtonIco('AI Complete', () => formatAndLoadCodeIntoCell(cell, `AI_complete`, CURRENT_MODEL, API_KEY), 'aiComplete');
         const aiFormatBtn = createButtonIco('AI Format', () => formatAndLoadCodeIntoCell(cell, `AI_format`, CURRENT_MODEL, API_KEY), 'aiFormat');
-        const aiExplainBtn = createButtonIco('AI Format', () => formatAndLoadCodeIntoCell(cell, `AI_explain`, CURRENT_MODEL, API_KEY), 'aiExplain');
+        const aiExplainBtn = createButtonIco('AI Explain', () => formatAndLoadCodeIntoCell(cell, `AI_explain`, CURRENT_MODEL, API_KEY), 'aiExplain');
+        const excelJsonBtn = createButtonIco('Import/Export Excel', () => openExcelImportExportDialog(cell), 'addEditExcel');
 
         controlBar.appendChild(convertToMarkdownBtn);
         controlAiBar.appendChild(aiCompleteBtn);
         controlAiBar.appendChild(aiFormatBtn);
         controlAiBar.appendChild(aiExplainBtn);
+        controlBar.appendChild(excelJsonBtn);
     } else if (cell.classList.contains('nb-markdown-cell')) {
         const previewBtn = createButton('Preview', () => updateMarkdownPreview(cell));
         controlBar.appendChild(previewBtn);
-
         const convertToCodeBtn = createButton('Code', () => convertToCode(cell));
         controlBar.appendChild(convertToCodeBtn);
     }
@@ -714,38 +715,11 @@ function addControlBar(cell) {
     controlBar.appendChild(deleteBtn);
 
     cell.insertBefore(controlBar, cell.firstChild);
-    // Vlož controlAiBar iba ak sú nastavené hodnoty
-    if (API_KEY !== '') {
+    // Insert the control AI bar only if API_KEY is defined and not empty
+    if (typeof API_KEY !== 'undefined' && API_KEY !== '') {
         cell.insertBefore(controlAiBar, controlBar.nextSibling);
     }
 }
-
-
-function loadPreviousCodeIntoCell(cell) {
-    // Load all previous code
-    const allPreviousCode = loadPreviousCodeCells(cell);
-
-    // Insert the code into the current cell
-    const codeLines = cell.querySelectorAll(".CodeMirror-code > div > pre > span");
-    
-    // Assuming you're using CodeMirror, you'll need to update its content
-    // This part might need to be adjusted based on how your CodeMirror instance is set up
-    const codeMirror = cell.querySelector('.CodeMirror').CodeMirror;
-    if (codeMirror) {
-        codeMirror.setValue(allPreviousCode);
-    } else {
-        console.error('CodeMirror instance not found');
-    }
-}
-
-
-function aiCompleteCell(cell, currentModel, apiKey) {
-    formatAndLoadCodeIntoCell(cell, currentModel, apiKey);
-    const executeButtons = document.querySelectorAll('.sagecell_evalButton.ui-button.ui-corner-all.ui-widget');
-
-}
-
-
 
 function formatAndLoadCodeIntoCell(cell, aiCommand, currentModel, apiKey) {
     // Load all previous code
@@ -961,7 +935,7 @@ function formatCodeWithAIComplete(previousCode, currentModel, apiKey) {
     return `url = 'https://raw.githubusercontent.com/JupyterPER/SageMathApplications/refs/heads/main/AIcommandsMistral%20NB%20player.py'
 load(url)
 
-NBplayer_code = '''
+NBplayer_code = r'''
 ${previousCode}
 '''
 AIanswer = AI_complete(language='english', model='${currentModel}', NBplayer_code=NBplayer_code, api_key = '${apiKey}')
@@ -1298,3 +1272,430 @@ function restoreNotebookFromText(text) {
 
 }
 
+// New function to import an Excel file, convert it to JSON, and load it into the current code cell
+function importExcelJsonToCell(cell) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    // Accept only Excel files
+    fileInput.accept = '.xlsx,.xls';
+    fileInput.style.display = 'none';
+
+    fileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = e.target.result;
+            try {
+                // Using SheetJS (XLSX) library to parse the file
+                const workbook = XLSX.read(data, { type: 'binary' });
+                // Get the first worksheet
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                // Convert the worksheet to JSON (array of arrays)
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                // Format and load the resulting JSON into the code cell
+                formatAndLoadExcelJsonIntoCell(cell, jsonData);
+            } catch (error) {
+                console.error("Error converting Excel to JSON:", error);
+                alert("Failed to convert Excel file to JSON.");
+            }
+        };
+        reader.readAsBinaryString(file);
+    });
+
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+}
+
+// New function similar to formatAndLoadCodeIntoCell but for Excel JSON data
+function formatAndLoadExcelJsonIntoCell(cell, jsonData) {
+    const jsonString = JSON.stringify(jsonData, null, 2);
+    const formattedCode = `# Specify the DataFrame name ('df' is for default)
+dataframe_name = "df"  
+import pandas as pd, json
+
+data_raw = r'''
+${jsonString}
+'''
+# Dynamically create the DataFrame with the specified name
+data_json = json.loads(data_raw)
+globals()[dataframe_name] = pd.DataFrame(data_json[1:], columns=data_json[0])
+
+# Access the dynamically created DataFrame
+print(f"The DataFrame '{dataframe_name}' has been created successfully.")
+print(f"Shape of the DataFrame: {globals()[dataframe_name].shape}")
+print(f"Columns in the DataFrame: {', '.join(map(str, globals()[dataframe_name].columns))}")`;
+
+    const codeMirrorElem = cell.querySelector('.CodeMirror');
+    if (codeMirrorElem && codeMirrorElem.CodeMirror) {
+        const codeMirror = codeMirrorElem.CodeMirror;
+        codeMirror.setValue(formattedCode);
+        // Automatically click the execute button if available
+        const executeButton = cell.querySelector('.sagecell_evalButton.ui-button.ui-corner-all.ui-widget');
+        if (executeButton) {
+            executeButton.click();
+        } else {
+            console.error('Execute button not found in cell.');
+        }
+    } else {
+        console.error('CodeMirror instance not found in cell.');
+    }
+}
+// NEW FUNCTION: Open a popup window that lets the user choose to Import, Export, or Edit Excel JSON data.
+function openExcelImportExportDialog(cell) {
+    // Create a modal overlay
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'excelImportExportModal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.zIndex = '10000';
+
+    // Create modal content container
+    const modalContent = document.createElement('div');
+    modalContent.style.backgroundColor = '#fff';
+    modalContent.style.padding = '20px';
+    modalContent.style.borderRadius = '5px';
+    modalContent.style.minWidth = '300px';
+    modalContent.style.textAlign = 'center';
+
+    // Title
+    const title = document.createElement('h3');
+    title.textContent = 'Data Options';
+    modalContent.appendChild(title);
+
+    // Instruction
+    const instruction = document.createElement('p');
+    instruction.textContent = 'Choose an action for data:';
+    modalContent.appendChild(instruction);
+
+    // Import button
+    const importBtn = document.createElement('button');
+    importBtn.textContent = 'Import Excel';
+    importBtn.style.margin = '10px';
+    importBtn.onclick = function () {
+        document.body.removeChild(modal);
+        importExcelJsonToCell(cell);
+    };
+    modalContent.appendChild(importBtn);
+
+    // Edit button
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit Data';
+    editBtn.style.margin = '10px';
+    editBtn.onclick = function () {
+        document.body.removeChild(modal);
+        openExcelEditorDialog(cell);
+    };
+    modalContent.appendChild(editBtn);
+
+    // Export button
+    const exportBtn = document.createElement('button');
+    exportBtn.textContent = 'Export Excel';
+    exportBtn.style.margin = '10px';
+    exportBtn.onclick = function () {
+        document.body.removeChild(modal);
+        exportExcelJsonFromCell(cell);
+    };
+    modalContent.appendChild(exportBtn);
+
+    // Cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.margin = '10px';
+    cancelBtn.onclick = function () {
+        document.body.removeChild(modal);
+    };
+    modalContent.appendChild(cancelBtn);
+
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+}
+
+// NEW FUNCTION: Open a modal editor to let the user edit Excel JSON data as a table.
+// The user can add/delete rows and columns and then save changes back into the code cell.
+function openExcelEditorDialog(cell) {
+    // Try to extract JSON data from the cell.
+    const codeMirrorElem = cell.querySelector('.CodeMirror');
+    let codeContent = "";
+    if (codeMirrorElem && codeMirrorElem.CodeMirror) {
+        codeContent = codeMirrorElem.CodeMirror.getValue();
+    } else {
+        codeContent = cell.textContent;
+    }
+    const regex = /data_raw\s*=\s*r'''([\s\S]*?)'''/;
+    let jsonData;
+    const match = codeContent.match(regex);
+    if (match && match[1]) {
+        try {
+            jsonData = JSON.parse(match[1]);
+        } catch (error) {
+            console.error("Error parsing JSON data from cell:", error);
+            alert("Failed to parse existing JSON data. Starting with an empty table.");
+            jsonData = [];
+        }
+    } else {
+        // If no JSON found, initialize with a default header and one empty row.
+        jsonData = [["Column1", "Column2"], ["", ""]];
+    }
+
+    // Create a modal overlay for the editor
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'excelEditorModal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.zIndex = '11000';
+
+    const modalContent = document.createElement('div');
+    modalContent.style.backgroundColor = '#fff';
+    modalContent.style.padding = '20px';
+    modalContent.style.borderRadius = '5px';
+    modalContent.style.minWidth = '400px';
+    modalContent.style.textAlign = 'center';
+
+    const title = document.createElement('h3');
+    title.textContent = 'Edit Excel JSON Data';
+    modalContent.appendChild(title);
+
+    // Create a container for the editable table.
+    const tableContainer = document.createElement('div');
+    tableContainer.style.maxHeight = '400px';
+    tableContainer.style.overflow = 'auto';
+    tableContainer.style.marginBottom = '10px';
+
+    // Function to render the table from jsonData (array of arrays)
+    function renderTable() {
+        tableContainer.innerHTML = "";
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.marginBottom = '10px';
+        // Create table rows and cells
+        jsonData.forEach((row, rowIndex) => {
+            const tr = document.createElement('tr');
+            row.forEach((cellValue, colIndex) => {
+                const td = document.createElement('td');
+                td.style.border = '1px solid #ccc';
+                td.style.padding = '5px';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = cellValue;
+                input.style.width = '100%';
+                // Update jsonData when cell is edited
+                input.onchange = function () {
+                    jsonData[rowIndex][colIndex] = input.value;
+                };
+                td.appendChild(input);
+                tr.appendChild(td);
+            });
+            table.appendChild(tr);
+        });
+        tableContainer.appendChild(table);
+    }
+    renderTable();
+    modalContent.appendChild(tableContainer);
+
+    // Buttons for modifying rows/columns
+    const rowControls = document.createElement('div');
+    rowControls.style.margin = '10px 0';
+    const addRowBtn = document.createElement('button');
+    addRowBtn.textContent = 'Add Row';
+    addRowBtn.style.margin = '0 5px';
+    addRowBtn.onclick = function () {
+        // Create an empty row with the same number of columns as header
+        const numCols = jsonData[0] ? jsonData[0].length : 1;
+        const newRow = Array(numCols).fill("");
+        jsonData.push(newRow);
+        renderTable();
+    };
+    const deleteRowBtn = document.createElement('button');
+    deleteRowBtn.textContent = 'Delete Last Row';
+    deleteRowBtn.style.margin = '0 5px';
+    deleteRowBtn.onclick = function () {
+        if (jsonData.length > 1) {
+            jsonData.pop();
+            renderTable();
+        } else {
+            alert("Cannot delete the header row.");
+        }
+    };
+    rowControls.appendChild(addRowBtn);
+    rowControls.appendChild(deleteRowBtn);
+    modalContent.appendChild(rowControls);
+
+    const colControls = document.createElement('div');
+    colControls.style.margin = '10px 0';
+    const addColBtn = document.createElement('button');
+    addColBtn.textContent = 'Add Column';
+    addColBtn.style.margin = '0 5px';
+    addColBtn.onclick = function () {
+        // Add an empty cell to each row
+        jsonData.forEach((row, index) => {
+            row.push(index === 0 ? "New Column" : "");
+        });
+        renderTable();
+    };
+    const deleteColBtn = document.createElement('button');
+    deleteColBtn.textContent = 'Delete Last Column';
+    deleteColBtn.style.margin = '0 5px';
+    deleteColBtn.onclick = function () {
+        if (jsonData[0] && jsonData[0].length > 1) {
+            jsonData.forEach(row => row.pop());
+            renderTable();
+        } else {
+            alert("Cannot delete all columns.");
+        }
+    };
+    colControls.appendChild(addColBtn);
+    colControls.appendChild(deleteColBtn);
+    modalContent.appendChild(colControls);
+
+    // Save and Cancel buttons for the editor
+    const editorControls = document.createElement('div');
+    editorControls.style.marginTop = '15px';
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save Changes';
+    saveBtn.style.margin = '0 5px';
+    saveBtn.onclick = function () {
+        // Convert the updated jsonData to a formatted JSON string.
+        const newJsonString = JSON.stringify(jsonData, null, 2);
+        // Create the formatted code block with the updated JSON string.
+        const formattedCode = `# Specify the DataFrame name ('df' is default)
+dataframe_name = "df"  
+import pandas as pd, json
+
+data_raw = r'''
+${newJsonString}
+'''
+# Dynamically create the DataFrame with the specified name
+data_json = json.loads(data_raw)
+globals()[dataframe_name] = pd.DataFrame(data_json[1:], columns=data_json[0])
+
+# Access the dynamically created DataFrame
+print(f"The DataFrame '{dataframe_name}' has been created successfully.")
+print(f"Shape of the DataFrame: {globals()[dataframe_name].shape}")
+print(f"Columns in the DataFrame: {', '.join(map(str, globals()[dataframe_name].columns))}")`;
+        // Update the code cell via CodeMirror
+        const cmElem = cell.querySelector('.CodeMirror');
+        if (cmElem && cmElem.CodeMirror) {
+            cmElem.CodeMirror.setValue(formattedCode);
+            // Optionally trigger the execute button
+            const executeButton = cell.querySelector('.sagecell_evalButton.ui-button.ui-corner-all.ui-widget');
+            if (executeButton) {
+                executeButton.click();
+            }
+        } else {
+            console.error("CodeMirror instance not found in cell.");
+        }
+        document.body.removeChild(modal);
+    };
+    const cancelEditorBtn = document.createElement('button');
+    cancelEditorBtn.textContent = 'Cancel';
+    cancelEditorBtn.style.margin = '0 5px';
+    cancelEditorBtn.onclick = function () {
+        document.body.removeChild(modal);
+    };
+    editorControls.appendChild(saveBtn);
+    editorControls.appendChild(cancelEditorBtn);
+    modalContent.appendChild(editorControls);
+
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+}
+
+
+function importExcelJsonToCell(cell) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    // Accept only Excel files
+    fileInput.accept = '.xlsx,.xls';
+    fileInput.style.display = 'none';
+
+    fileInput.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const data = e.target.result;
+            try {
+                // Using SheetJS (XLSX) library to parse the file
+                const workbook = XLSX.read(data, { type: 'binary' });
+                // Get the first worksheet
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                // Convert the worksheet to JSON (array of arrays)
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                // Format and load the resulting JSON into the code cell
+                formatAndLoadExcelJsonIntoCell(cell, jsonData);
+            } catch (error) {
+                console.error("Error converting Excel to JSON:", error);
+                alert("Failed to convert Excel file to JSON.");
+            }
+        };
+        reader.readAsBinaryString(file);
+    });
+
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+}
+
+
+function exportExcelJsonFromCell(cell) {
+    const codeMirrorElem = cell.querySelector('.CodeMirror');
+    let codeContent = "";
+    if (codeMirrorElem && codeMirrorElem.CodeMirror) {
+        codeContent = codeMirrorElem.CodeMirror.getValue();
+    } else {
+        codeContent = cell.textContent;
+    }
+
+    // Extract the JSON data from between r''' ... '''
+    const regex = /data_raw\s*=\s*r'''([\s\S]*?)'''/;
+    const match = codeContent.match(regex);
+    if (match && match[1]) {
+        const jsonString = match[1];
+        try {
+            const jsonData = JSON.parse(jsonString);
+            // Create a new workbook and worksheet using SheetJS (XLSX)
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(jsonData);
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            // Write the workbook to a binary string
+            var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+            // Helper function to convert a binary string to an ArrayBuffer
+            function s2ab(s) {
+                var buf = new ArrayBuffer(s.length);
+                var view = new Uint8Array(buf);
+                for (var i = 0; i < s.length; i++) {
+                    view[i] = s.charCodeAt(i) & 0xFF;
+                }
+                return buf;
+            }
+            // Use FileSaver to prompt a download of the workbook as an XLSX file
+            saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), "exported_data.xlsx");
+        } catch (error) {
+            console.error("Error parsing JSON data:", error);
+            alert("Failed to parse JSON data from the cell.");
+        }
+    } else {
+        alert("No Excel JSON data found in the selected cell.");
+    }
+}
