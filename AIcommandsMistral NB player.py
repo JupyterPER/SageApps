@@ -68,7 +68,7 @@ Here are the requirements for your explanation:
 
 # Load Mistral
 from mistralai import Mistral
-import re
+import os
 import time
 
 from IPython.display import IFrame, display, HTML, Markdown, display_html
@@ -86,6 +86,38 @@ def replace_curly_braces(input_string):
     output_string = input_string.replace('{', '&#123;').replace('}', '&#125;')
     return output_string
 
+def sanitize_long_data_raw_by_lines(text, line_threshold=20, head_lines=10, tail_lines=5):
+    """
+    Shortens triple-quoted strings that start with 'data_raw =' based on line count.
+
+    Args:
+        text (str): Input text to sanitize
+        line_threshold (int): Number of lines above which string is considered too long
+        head_lines (int): Number of lines to keep at the start
+        tail_lines (int): Number of lines to keep at the end
+
+    Returns:
+        str: Text with long 'data_raw =' strings shortened
+    """
+    pattern = r"^(data_raw\s*=\s*r''')(.*?)('''\s*)$"
+    
+    def replacer(match):
+        prefix = match.group(1)
+        content = match.group(2)
+        suffix = match.group(3)
+        lines = content.splitlines()
+        if len(lines) > line_threshold:
+            new_content = "\n".join(
+                lines[:head_lines] + ["\n.\n.\n.\n"] + lines[-tail_lines:]
+            )
+            return prefix + new_content + suffix
+        else:
+            return match.group(0)
+    
+    sanitized = re.sub(pattern, replacer, text, flags=re.DOTALL|re.MULTILINE)
+    return sanitized
+    
+
 def sanitize_Ins(text):
     """
     Replaces content between "# -START OF AI CELL-" and "# -END OF AI CELL-" markers with "#".
@@ -96,7 +128,8 @@ def sanitize_Ins(text):
         str: Text with AI cell replaced by "#"
     """
     pattern = r'# -START OF AI CELL-.*?# -END OF AI CELL-'
-    sanitized_text = re.sub(pattern, '#', text, flags=re.DOTALL)
+    text = sanitize_long_data_raw_by_lines(text)
+    sanitized_ai = re.sub(pattern, '#', text, flags=re.DOTALL)
     return sanitized_text
 
 def AI_generate(message, model = None, api_key = ''):
