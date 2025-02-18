@@ -99,7 +99,7 @@ def sanitize_long_data_raw_by_lines(text, line_threshold=20, head_lines=10, tail
     Returns:
         str: Text with long 'data_raw =' strings shortened
     """
-    pattern = r"^(data_raw\s*=\s*r''')(.*?)('''\s*)$"
+    pattern = r'^(data_raw\s*=\s*r""")(.*?)("""\s*)$'
     
     def replacer(match):
         prefix = match.group(1)
