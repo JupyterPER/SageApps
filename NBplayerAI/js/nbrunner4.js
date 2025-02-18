@@ -722,37 +722,43 @@ function addControlBar(cell) {
 }
 
 function formatAndLoadCodeIntoCell(cell, aiCommand, currentModel, apiKey) {
-    // Load all previous code
+    const codeMirror = cell.querySelector('.CodeMirror').CodeMirror;
+    if (!codeMirror) {
+        console.error('CodeMirror inštancia sa nenašla');
+        return;
+    }
+    const currentQuery = codeMirror.getValue();
     const previousCode = loadPreviousCodeCells(cell);
+    const formattedCode = `# -START OF AI CELL-
+current_query = r'''
+${currentQuery}
+'''
+language = 'english'
+model='${currentModel}'
 
-    // Format the code with AI complete template
-    const formattedCode = `url = 'https://raw.githubusercontent.com/JupyterPER/SageMathApplications/refs/heads/main/AIcommandsMistral%20NB%20player.py'
+url = 'https://raw.githubusercontent.com/JupyterPER/SageMathApplications/refs/heads/main/AIcommandsMistral%20NB%20player.py'
 load(url)
 
-NBplayer_code = '''
+previous_code = r'''
 ${previousCode}
 '''
-AIanswer = ${aiCommand}(language='english', model='${currentModel}', NBplayer_code=NBplayer_code, api_key = '${apiKey}')
-print(AIanswer)`;
 
-    // Insert the formatted code into the current cell
-    const codeMirror = cell.querySelector('.CodeMirror').CodeMirror;
-    if (codeMirror) {
-        codeMirror.setValue(formattedCode);
+AIanswer = ${aiCommand}(language=language, model=model, NBplayer_code=previous_code+f'In[FOCUS]: {current_query}', api_key='${apiKey}')
+print(AIanswer)
+# -END OF AI CELL-`;
 
-        // Find and click the nearest execute button
-        const nearestExecuteButton = cell.querySelector('.sagecell_evalButton.ui-button.ui-corner-all.ui-widget');
-        if (nearestExecuteButton) {
-            nearestExecuteButton.click();
-        } else {
-            console.error('Execute button not found');
-        }
+    // Vlož nový kód do aktuálnej bunky
+    codeMirror.setValue(formattedCode);
+
+    // Nájdite a kliknite na prislúchajúce tlačidlo vykonania kódu
+    const nearestExecuteButton = cell.querySelector('.sagecell_evalButton.ui-button.ui-corner-all.ui-widget');
+    if (nearestExecuteButton) {
+        nearestExecuteButton.click();
     } else {
-        console.error('CodeMirror instance not found');
+        console.error('Tlačidlo vykonania sa nenašlo');
     }
 }
 
-// You'll also need to ensure that loadPreviousCodeCells function is available
 function loadPreviousCodeCells(focusedCell) {
     let allText = '';
     let currentCell = focusedCell.previousElementSibling;
@@ -771,8 +777,6 @@ function loadPreviousCodeCells(focusedCell) {
 
     return allText.trim();
 }
-
-
 
 
 function removeAllControlBars() {
@@ -1471,7 +1475,7 @@ function openExcelEditorDialog(cell) {
     modalContent.style.textAlign = 'center';
 
     const title = document.createElement('h3');
-    title.textContent = 'Edit Excel JSON Data';
+    title.textContent = 'Edit Data';
     modalContent.appendChild(title);
 
     // Create a container for the editable table.
@@ -1481,24 +1485,41 @@ function openExcelEditorDialog(cell) {
     tableContainer.style.marginBottom = '10px';
 
     // Function to render the table from jsonData (array of arrays)
+    // Inside the openExcelEditorDialog function, update the renderTable function as follows:
     function renderTable() {
         tableContainer.innerHTML = "";
         const table = document.createElement('table');
         table.style.width = '100%';
         table.style.borderCollapse = 'collapse';
         table.style.marginBottom = '10px';
-        // Create table rows and cells
+        table.style.fontFamily = 'Arial, sans-serif';
+
         jsonData.forEach((row, rowIndex) => {
             const tr = document.createElement('tr');
+            // Apply zebra striping for non-header rows
+            tr.style.backgroundColor =
+                rowIndex === 0 ? '#4CAF50' : (rowIndex % 2 === 0 ? '#f9f9f9' : '#ffffff');
+
             row.forEach((cellValue, colIndex) => {
                 const td = document.createElement('td');
-                td.style.border = '1px solid #ccc';
-                td.style.padding = '5px';
+                td.style.border = '1px solid #ddd';
+                td.style.padding = '8px';
+                // For the header row, update styling
+                if (rowIndex === 0) {
+                    td.style.color = '#fff';
+                    td.style.textAlign = 'center';
+                    td.style.fontWeight = 'bold';
+                }
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.value = cellValue;
                 input.style.width = '100%';
-                // Update jsonData when cell is edited
+                input.style.boxSizing = 'border-box';
+                input.style.border = 'none';
+                input.style.outline = 'none';
+                input.style.padding = '4px';
+                input.style.fontFamily = 'inherit';
+                // Update jsonData when the cell is edited
                 input.onchange = function () {
                     jsonData[rowIndex][colIndex] = input.value;
                 };
@@ -1699,3 +1720,5 @@ function exportExcelJsonFromCell(cell) {
         alert("No Excel JSON data found in the selected cell.");
     }
 }
+
+
