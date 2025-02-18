@@ -130,7 +130,7 @@ def sanitize_Ins(text):
     pattern = r'# -START OF AI CELL-.*?# -END OF AI CELL-'
     text = sanitize_long_data_raw_by_lines(text)
     sanitized_ai = re.sub(pattern, '#', text, flags=re.DOTALL)
-    return sanitized_text
+    return sanitized_ai
 
 def AI_generate(message, model = None, api_key = ''):
     """
