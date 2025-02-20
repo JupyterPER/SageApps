@@ -724,11 +724,15 @@ function addControlBar(cell) {
 function formatAndLoadCodeIntoCell(cell, aiCommand, currentModel, apiKey) {
     const codeMirror = cell.querySelector('.CodeMirror').CodeMirror;
     if (!codeMirror) {
-        console.error('CodeMirror inštancia sa nenašla');
+        console.error('CodeMirror instance was not founf');
         return;
     }
-    const currentQuery = codeMirror.getValue();
-    const previousCode = loadPreviousCodeCells(cell);
+    let currentQuery = codeMirror.getValue();
+    let previousCode = loadPreviousCodeCells(cell);
+    // Ensure both currentQuery and previousCode are strings and replace all single quotes with double quotes
+    currentQuery = String(currentQuery).replace(/'/g, '"');
+    previousCode = String(previousCode).replace(/'/g, '"');
+
     const formattedCode = `# -START OF AI CELL-
 current_query = r'''
 ${currentQuery}
@@ -758,6 +762,7 @@ print(AIanswer)
         console.error('Tlačidlo vykonania sa nenašlo');
     }
 }
+
 
 function loadPreviousCodeCells(focusedCell) {
     let allText = '';
@@ -835,6 +840,7 @@ function addCell(referenceCell, position) {
 
 function deleteCell(cell) {
 	cell.remove();
+    reprocessNotebook();
 }
 
 function moveCell(cell, direction) {
@@ -933,17 +939,6 @@ function loadPreviousCodeCells(focusedCell) {
       .replace(/'/g, '"');
 
     return allCode.trim();
-}
-
-function formatCodeWithAIComplete(previousCode, currentModel, apiKey) {
-    return `url = 'https://raw.githubusercontent.com/JupyterPER/SageMathApplications/refs/heads/main/AIcommandsMistral%20NB%20player.py'
-load(url)
-
-NBplayer_code = r'''
-${previousCode}
-'''
-AIanswer = AI_complete(language='english', model='${currentModel}', NBplayer_code=NBplayer_code, api_key = '${apiKey}')
-print(AIanswer)`;
 }
 
 function getCodeFromCell(codeCell, cellIndex) {
@@ -1147,28 +1142,36 @@ function getCodeFromCell(codeCell, cellIndex) {
 
 function collectNotebookText() {
     const cells = document.querySelectorAll('.nb-cell');
-    let output = '';
+    const outputs = [];
     let codeCellCount = 1;
 
     cells.forEach((cell, index) => {
+        let cellText = '';
+
         if (cell.classList.contains('nb-markdown-cell')) {
             // Try to get text from the hidden textarea
             const textarea = cell.querySelector('textarea');
             if (textarea) {
                 // Remove zero-width spaces, if present
                 const text = textarea.value.replace(/[\u200B]/g, '');
-                output += `@Markdown[${index + 1}]:\n${text}\n@=================\n`;
+                cellText = `@Markdown[${index + 1}]:\n${text}`;
             }
         } else if (cell.classList.contains('nb-code-cell')) {
             // Use your existing function to extract code
             const codeText = getCodeFromCell(cell, codeCellCount - 1);
-            output += `@${codeText}\n@=================\n`;
+            cellText = `@${codeText}`;
             codeCellCount++;
+        }
+
+        if (cellText) {
+            outputs.push(cellText);
         }
     });
 
-    return output.trim();
+    // Join each cell's content with the separator so it isn't added after the last cell.
+    return outputs.join('\n@=================\n').trim();
 }
+
 function getFormattedDate() {
     const date = new Date();
     const year = date.getFullYear();
@@ -1232,6 +1235,14 @@ function importNotebookFromFile(file) {
     reader.addEventListener('load', event => {
         const fileContent = event.target.result;
         restoreNotebookFromText(fileContent);
+        // Delay before the first reprocessing
+        setTimeout(() => {
+            reprocessNotebook();
+            // Delay before the second reprocessing
+            setTimeout(() => {
+                reprocessNotebook();
+            }, 1000); // 1000 ms delay between the first and second reprocessing
+        }, 1000); // 1000 ms delay before the first reprocessing
     });
     reader.readAsText(file);
 }
@@ -1241,15 +1252,22 @@ function importNotebookFromFile(file) {
  * @param {string} text - The text of the notebook_export_current_date.txt file (beta version)
  */
 function restoreNotebookFromText(text) {
-    // Split blocks by double-newlines or blank lines:
-    const cellBlocks = text.split('@=================\n');
-
     // Find the container for appending cells
     const container = document.querySelector('.nb-worksheet');
     if (!container) {
         console.error('Could not find #notebook-container');
         return;
     }
+
+    // Ask the user if they want to wipe out all previous content
+    const shouldWipe = confirm("Do you want to wipe out all the previous content before loading the notebook?");
+    if (shouldWipe) {
+        // Clear the container
+        container.innerHTML = "";
+    }
+
+    // Split blocks by our separator:
+    const cellBlocks = text.split('@=================\n');
 
     cellBlocks.forEach(block => {
         const lines = block.split('\n');
@@ -1263,18 +1281,18 @@ function restoreNotebookFromText(text) {
             const mdCell = createMarkdownCell(content);
             container.appendChild(mdCell);
         } else if (header.startsWith('@In[')) {
-            // Rebuild a Code cell
+            // Rebuild a Code cell; here we also remove any problematic zero-width spaces
             const codeCell = createCodeCell(content.replace(/[\u200B]/g, ''));
             container.appendChild(codeCell);
-            addControlBar(codeCell)
+            addControlBar(codeCell);
         } else {
             // If the header doesn't match known patterns,
             // handle it as you wish or log a warning
             console.warn(`Unrecognized cell header format: "${header}"`);
         }
     });
-
 }
+
 
 // New function to import an Excel file, convert it to JSON, and load it into the current code cell
 function importExcelJsonToCell(cell) {
