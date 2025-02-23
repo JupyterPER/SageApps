@@ -24,7 +24,7 @@ function saveHtml() {
 
 	removeAllControlBars();
 	// Update the content of all input and preview elements
-    document.querySelectorAll('[id^="input"]').forEach((input, index) => {
+    document.querySelectorAll('[id^="mdinput"]').forEach((input, index) => {
         const preview = document.querySelectorAll('[id^="preview"]')[index];
         if (input.style.display !== 'none') {
             // If input is visible, update the data-original attribute
@@ -290,7 +290,7 @@ function toggleEditMode() {
 }
 
 function updateMarkdownPreview(cell) {
-    const input = cell.querySelector('[id^="input"]');
+    const input = cell.querySelector('[id^="mdinput"]');
     const preview = cell.querySelector('[id^="preview"]');
 
     if (!input || !preview) {
@@ -305,6 +305,12 @@ function updateMarkdownPreview(cell) {
     if (typeof texme !== 'undefined' && texme.render) {
         const output = texme.render(input.value);
         preview.innerHTML = output;
+
+        // Ensure all hyperlinks in the preview open in a new tab
+        preview.querySelectorAll('a').forEach(link => {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        });
     } else {
         console.error("Texme is not defined or not initialized.");
     }
@@ -314,17 +320,14 @@ function updateMarkdownPreview(cell) {
     preview.style.display = 'block';
 
     // Reset and typeset MathJax
-    
-	window.MathJax.texReset();
-	window.MathJax.typesetPromise([preview]);
-    
+    window.MathJax.texReset();
+    window.MathJax.typesetPromise([preview]);
 }
 
 
 function toggleMarkdownMode() {
-    var inputs = document.querySelectorAll('[id^="input"]');
+    var inputs = document.querySelectorAll('[id^="mdinput"]');
     var previews = document.querySelectorAll('[id^="preview"]');
-
     inputs.forEach((input, index) => {
         var preview = previews[index];
 
@@ -475,20 +478,17 @@ const iconDictionary = {
     addAbove: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M9.25 3.93066H7.375V5.80566C7.375 6.01191 7.20625 6.18066 7 6.18066C6.79375 6.18066 6.625 6.01191 6.625 5.80566V3.93066H4.75C4.54375 3.93066 4.375 3.76191 4.375 3.55566C4.375 3.34941 4.54375 3.18066 4.75 3.18066H6.625V1.30566C6.625 1.09941 6.79375 0.930664 7 0.930664C7.20625 0.930664 7.375 1.09941 7.375 1.30566V3.18066H9.25C9.45625 3.18066 9.625 3.34941 9.625 3.55566C9.625 3.76191 9.45625 3.93066 9.25 3.93066Z" fill="#616161"/>
         <path fill-rule="evenodd" clip-rule="evenodd" d="M2.5 8.5V10.5H11.5V8.5H2.5ZM2 7C1.44772 7 1 7.44772 1 8V11C1 11.5523 1.44772 12 2 12H12C12.5523 12 13 11.5523 13 11V8C13 7.44771 12.5523 7 12 7H2Z" fill="#616161"/></svg>`,
-    moveDown:`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none" data-icon="ui-components:move-down" class=""><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" d="M12.471 7.52899C12.7632 7.23684 12.7632 6.76316 12.471 6.47101V6.47101C12.179 6.17905 11.7057 6.17884 11.4135 6.47054L7.75 10.1275V1.75C7.75 1.33579 7.41421 1 7 1V1C6.58579 1 6.25 1.33579 6.25 1.75V10.1275L2.59726 6.46822C2.30338 6.17381 1.82641 6.17359 1.53226 6.46774V6.46774C1.2383 6.7617 1.2383 7.2383 1.53226 7.53226L6.29289 12.2929C6.68342 12.6834 7.31658 12.6834 7.70711 12.2929L12.471 7.52899Z" fill="#616161"></path></svg>`,
-    moveUp:`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none" data-icon="ui-components:move-up" class=""><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" d="M1.52899 6.47101C1.23684 6.76316 1.23684 7.23684 1.52899 7.52899V7.52899C1.82095 7.82095 2.29426 7.82116 2.58649 7.52946L6.25 3.8725V12.25C6.25 12.6642 6.58579 13 7 13V13C7.41421 13 7.75 12.6642 7.75 12.25V3.8725L11.4027 7.53178C11.6966 7.82619 12.1736 7.82641 12.4677 7.53226V7.53226C12.7617 7.2383 12.7617 6.7617 12.4677 6.46774L7.70711 1.70711C7.31658 1.31658 6.68342 1.31658 6.29289 1.70711L1.52899 6.47101Z" fill="#616161"></path></svg>`,
-    bin:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16px" height="16px" data-icon="ui-components:delete" class=""><path xmlns="http://www.w3.org/2000/svg" d="M0 0h24v24H0z" fill="none"></path><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" fill="#626262" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg>`,
-    duplicate:`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none" data-icon="ui-components:duplicate" class=""><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" fill-rule="evenodd" clip-rule="evenodd" d="M2.79998 0.875H8.89582C9.20061 0.875 9.44998 1.13914 9.44998 1.46198C9.44998 1.78482 9.20061 2.04896 8.89582 2.04896H3.35415C3.04936 2.04896 2.79998 2.3131 2.79998 2.63594V9.67969C2.79998 10.0025 2.55061 10.2667 2.24582 10.2667C1.94103 10.2667 1.69165 10.0025 1.69165 9.67969V2.04896C1.69165 1.40328 2.1904 0.875 2.79998 0.875ZM5.36665 11.9V4.55H11.0833V11.9H5.36665ZM4.14165 4.14167C4.14165 3.69063 4.50728 3.325 4.95832 3.325H11.4917C11.9427 3.325 12.3083 3.69063 12.3083 4.14167V12.3083C12.3083 12.7594 11.9427 13.125 11.4917 13.125H4.95832C4.50728 13.125 4.14165 12.7594 4.14165 12.3083V4.14167Z" fill="#616161"></path><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" d="M9.43574 8.26507H8.36431V9.3365C8.36431 9.45435 8.26788 9.55078 8.15002 9.55078C8.03217 9.55078 7.93574 9.45435 7.93574 9.3365V8.26507H6.86431C6.74645 8.26507 6.65002 8.16864 6.65002 8.05078C6.65002 7.93292 6.74645 7.8365 6.86431 7.8365H7.93574V6.76507C7.93574 6.64721 8.03217 6.55078 8.15002 6.55078C8.26788 6.55078 8.36431 6.64721 8.36431 6.76507V7.8365H9.43574C9.5536 7.8365 9.65002 7.93292 9.65002 8.05078C9.65002 8.16864 9.5536 8.26507 9.43574 8.26507Z" fill="#616161" stroke="#616161" stroke-width="0.5"></path></svg>`,
+    moveDown: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none" data-icon="ui-components:move-down" class=""><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" d="M12.471 7.52899C12.7632 7.23684 12.7632 6.76316 12.471 6.47101V6.47101C12.179 6.17905 11.7057 6.17884 11.4135 6.47054L7.75 10.1275V1.75C7.75 1.33579 7.41421 1 7 1V1C6.58579 1 6.25 1.33579 6.25 1.75V10.1275L2.59726 6.46822C2.30338 6.17381 1.82641 6.17359 1.53226 6.46774V6.46774C1.2383 6.7617 1.2383 7.2383 1.53226 7.53226L6.29289 12.2929C6.68342 12.6834 7.31658 12.6834 7.70711 12.2929L12.471 7.52899Z" fill="#616161"></path></svg>`,
+    moveUp: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none" data-icon="ui-components:move-up" class=""><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" d="M1.52899 6.47101C1.23684 6.76316 1.23684 7.23684 1.52899 7.52899V7.52899C1.82095 7.82095 2.29426 7.82116 2.58649 7.52946L6.25 3.8725V12.25C6.25 12.6642 6.58579 13 7 13V13C7.41421 13 7.75 12.6642 7.75 12.25V3.8725L11.4027 7.53178C11.6966 7.82619 12.1736 7.82641 12.4677 7.53226V7.53226C12.7617 7.2383 12.7617 6.7617 12.4677 6.46774L7.70711 1.70711C7.31658 1.31658 6.68342 1.31658 6.29289 1.70711L1.52899 6.47101Z" fill="#616161"></path></svg>`,
+    bin: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16px" height="16px" data-icon="ui-components:delete" class=""><path xmlns="http://www.w3.org/2000/svg" d="M0 0h24v24H0z" fill="none"></path><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" fill="#626262" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg>`,
+    duplicate: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none" data-icon="ui-components:duplicate" class=""><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" fill-rule="evenodd" clip-rule="evenodd" d="M2.79998 0.875H8.89582C9.20061 0.875 9.44998 1.13914 9.44998 1.46198C9.44998 1.78482 9.20061 2.04896 8.89582 2.04896H3.35415C3.04936 2.04896 2.79998 2.3131 2.79998 2.63594V9.67969C2.79998 10.0025 2.55061 10.2667 2.24582 10.2667C1.94103 10.2667 1.69165 10.0025 1.69165 9.67969V2.04896C1.69165 1.40328 2.1904 0.875 2.79998 0.875ZM5.36665 11.9V4.55H11.0833V11.9H5.36665ZM4.14165 4.14167C4.14165 3.69063 4.50728 3.325 4.95832 3.325H11.4917C11.9427 3.325 12.3083 3.69063 12.3083 4.14167V12.3083C12.3083 12.7594 11.9427 13.125 11.4917 13.125H4.95832C4.50728 13.125 4.14165 12.7594 4.14165 12.3083V4.14167Z" fill="#616161"></path><path xmlns="http://www.w3.org/2000/svg" class="jp-icon3" d="M9.43574 8.26507H8.36431V9.3365C8.36431 9.45435 8.26788 9.55078 8.15002 9.55078C8.03217 9.55078 7.93574 9.45435 7.93574 9.3365V8.26507H6.86431C6.74645 8.26507 6.65002 8.16864 6.65002 8.05078C6.65002 7.93292 6.74645 7.8365 6.86431 7.8365H7.93574V6.76507C7.93574 6.64721 8.03217 6.55078 8.15002 6.55078C8.26788 6.55078 8.36431 6.64721 8.36431 6.76507V7.8365H9.43574C9.5536 7.8365 9.65002 7.93292 9.65002 8.05078C9.65002 8.16864 9.5536 8.26507 9.43574 8.26507Z" fill="#616161" stroke="#616161" stroke-width="0.5"></path></svg>`,
     aiComplete: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" class="">
     <path class="jp-icon3" d="m8 8-4 4 4 4m8 0 4-4-4-4m-2-3-4 14" stroke="#616161" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>`,
     aiFormat: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" class=""><path class="jp-icon3" d="M14 4.182A4.136 4.136 0 0 1 16.9 3c1.087 0 2.13.425 2.899 1.182A4.01 4.01 0 0 1 21 7.037c0 1.068-.43 2.092-1.194 2.849L18.5 11.214l-5.8-5.71 1.287-1.31.012-.012Zm-2.717 2.763L6.186 12.13l2.175 2.141 5.063-5.218-2.141-2.108Zm-6.25 6.886-1.98 5.849a.992.992 0 0 0 .245 1.026 1.03 1.03 0 0 0 1.043.242L10.282 19l-5.25-5.168Zm6.954 4.01 5.096-5.186-2.218-2.183-5.063 5.218 2.185 2.15Z" fill="#616161"></path></svg>`,
     aiExplain: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" class=""><path class="jp-icon3" d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm9.008-3.018a1.502 1.502 0 0 1 2.522 1.159v.024a1.44 1.44 0 0 1-1.493 1.418 1 1 0 0 0-1.037.999V14a1 1 0 1 0 2 0v-.539a3.44 3.44 0 0 0 2.529-3.256 3.502 3.502 0 0 0-7-.255 1 1 0 0 0 2 .076c.014-.398.187-.774.48-1.044Zm.982 7.026a1 1 0 1 0 0 2H12a1 1 0 1 0 0-2h-.01Z" fill="#616161"></path></svg>`,
     addEditExcel: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" class=""><path class="jp-icon3" stroke="#616161" stroke-width="2" d="M3 11h18M3 15h18m-9-4v8m-8 0h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Z"/></svg>`,
+    markdownTips: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path d="M10 1c3.11 0 5.63 2.52 5.63 5.62 0 1.84-2.03 4.58-2.03 4.58-.33.44-.6 1.25-.6 1.8v1c0 .55-.45 1-1 1H8c-.55 0-1-.45-1-1v-1c0-.55-.27-1.36-.6-1.8 0 0-2.02-2.74-2.02-4.58C4.38 3.52 6.89 1 10 1zM7 16.87V16h6v.87c0 .62-.13 1.13-.75 1.13H12c0 .62-.4 1-1.02 1h-2c-.61 0-.98-.38-.98-1h-.25c-.62 0-.75-.51-.75-1.13z" fill="#616161"/></svg>`
 };
-
-
-
-
 
 
 function generateNewCellUpButtonHTML() {
@@ -609,19 +609,19 @@ function convertToMarkdown(codeCell) {
     markdownCell.className = 'nb-cell nb-markdown-cell';
     markdownCell.innerHTML = `
 		
-        <textarea id="input" placeholder="Enter your Markdown or HTML here" style="width: 100%; height:120px; display: none; font-family: Consolas, 'Courier New', monospace;" data-original=""></textarea>
+        <textarea id="mdinput" placeholder="Enter your Markdown or HTML here" style="width: 100%; height:120px; display: none; font-family: Consolas, 'Courier New', monospace;" data-original=""></textarea>
         <div id="preview"><p><em></em></p></div>
     `;
-    
+
     // Replace the code cell with the new markdown cell
     codeCell.parentNode.replaceChild(markdownCell, codeCell);
 
     // Get the textarea element
     const textarea = markdownCell.querySelector('textarea');
-    
+
     // Set the extracted text as the value of the textarea
     textarea.value = codeText;
-    
+
     // Update the data-original attribute
     textarea.setAttribute('data-original', codeText);
 
@@ -630,9 +630,12 @@ function convertToMarkdown(codeCell) {
 	addControlBar(markdownCell);
 }
 
+
+
+
 function initializeMarkdownCells() {
   var editCellsButton = document.getElementById('editCellsButton');
-  var inputs = document.querySelectorAll('[id^="input"]');
+  var inputs = document.querySelectorAll('[id^="mdinput"]');
   var previews = document.querySelectorAll('[id^="preview"]');
   var editMode = false;
 
@@ -708,7 +711,9 @@ function addControlBar(cell) {
         const previewBtn = createButton('Preview', () => updateMarkdownPreview(cell));
         controlBar.appendChild(previewBtn);
         const convertToCodeBtn = createButton('Code', () => convertToCode(cell));
+        const markdownTipsBtn = createButtonIco('Markdown Tips', () => toggleMarkdownTips(cell), 'markdownTips');
         controlBar.appendChild(convertToCodeBtn);
+        controlBar.appendChild(markdownTipsBtn);
     }
 
     controlBar.appendChild(duplicateBtn);
@@ -796,11 +801,15 @@ function removeAllControlBars() {
 function removeControlBar(cell) {
     const controlBar = cell.querySelector('.control-bar');
     const controlAiBar = cell.querySelector('.control-ai-bar');
+    const mdTips = cell.querySelector('.inline-markdown-tips');
     if (controlBar) {
         controlBar.remove();
     }
     if (controlAiBar) {
         controlAiBar.remove();
+    }
+    if (mdTips) {
+        mdTips.remove();
     }
 }
 
@@ -1213,7 +1222,7 @@ function createMarkdownCell(content) {
     const markdownCell = document.createElement('div');
     markdownCell.className = 'nb-cell nb-markdown-cell';
     markdownCell.innerHTML = `
-        <textarea id="input" placeholder="Enter your Markdown or HTML here" 
+        <textarea id="mdinput" placeholder="Enter your Markdown or HTML here" 
                   style="width: 100%; height:120px; display: none; font-family: Consolas, 'Courier New', monospace;"
                   data-original="">
         </textarea>
@@ -1743,4 +1752,50 @@ function exportExcelJsonFromCell(cell) {
     }
 }
 
-
+function toggleMarkdownTips(cell) {
+    let tipsPanel = cell.querySelector('.inline-markdown-tips');
+    if (tipsPanel) {
+        // Toggle the panel's display.
+        tipsPanel.style.display = (tipsPanel.style.display === 'none') ? 'block' : 'none';
+    } else {
+        // Create the tips panel if it doesn't exist.
+        tipsPanel = document.createElement('div');
+        tipsPanel.className = 'inline-markdown-tips';
+        tipsPanel.style.border = '1px solid #ccc';
+        tipsPanel.style.backgroundColor = '#f9f9f9';
+        tipsPanel.style.padding = '8px';
+        tipsPanel.style.marginTop = '5px';
+        tipsPanel.style.fontSize = '12px';
+        tipsPanel.innerHTML = `
+      <strong>Markdown Tips:</strong>
+      <ul style="padding-left:16px; margin:5px 0;">
+        <li>Use <code>*asterisks*</code> for <em>italics</em>.</li>
+        <li>Use <code>**double asterisks**</code> for <strong>bold</strong> text.</li>
+        <li>Start lines with <code>#</code> for headers (e.g. <code># Header1</code> or <code>## Header2</code>).</li>
+        <li>Use <code>-</code> or <code>*</code> for list items.</li>
+        <li>Insert <code>![alt text for figure](url or path to figure)</code> for inserting figures. Examples:</li>
+        <ul style="padding-left:16px; margin:5px 0;">
+            <li><code>![Figure 1](https://i.postimg.cc/jdThVHFH/elastic-pendulum.png)</code> for figures from online source.</li>
+            <li><code>![Figure 2](elastic-pendulum.png)</code> for locally stored figures (in the same directory as this notebook).</li>
+          </ul>
+        <li>Use <code>\`code\`</code> for inline code.</li>
+        <li>
+          Use <code>$...$</code> for inline LaTeX formulas. Examples:
+          <ul style="padding-left:16px; margin:5px 0;">
+            <li><code>$x^2$</code>, <code>$x^{2+i}$</code>, <code>$x_1$</code>, <code>$x_{n+1}$</code> for superscripts and subscripts.</li>
+            <li><code>$\\frac{a}{b}$</code>, <code>$\\dfrac{a}{b}$</code>, <code>$a \\cdot b$</code> for fractions and multiplications.</li>
+            <li><code>$\\alpha \\beta \\gamma \\Gamma \\rho \\phi \\Phi \\varphi \\omega \\Omega$</code> for lowercase and uppercase greek letters.</li>
+            <li><code>$\\sin \\cos \\tan \\exp \\ln$</code> for some elementary functions.</li>
+            <li><code>$A \\! B \\, C \\:D \\; E \\ F \\quad G \\qquad H \\hspace{1cm} I ~ J$</code> for various types of spaces.</li>
+            <li><code>$a=3~\\mathrm{m \\cdot s^{-2}}$</code> for physical quantities.</li>
+          </ul>
+        </li>
+        <li>
+          Use <code>$$...$$</code> for display math formulas.
+        </li>
+      </ul>
+    `;
+        // Insert the tips panel just after the control bar (assumed to be the first child).
+        cell.insertBefore(tipsPanel, cell.children[1] || null);
+    }
+}
