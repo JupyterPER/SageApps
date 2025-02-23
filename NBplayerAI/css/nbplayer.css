@@ -349,3 +349,96 @@ box-sizing: border-box;
         margin-top: 10px;
     }
 }
+
+.CodeMirror {
+    border: 1px solid #eee;
+    height: auto;
+}
+
+/* Modal overlay for both Import/Export and Excel editor dialogs */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+/* General modal content styling (used by both dialogs) */
+.modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    width: 700px;         /* Fixed width for a smaller modal */
+    max-width: 90%;       /* Responsive: will shrink on very small screens */
+    text-align: center;
+}
+
+/* Modal button styling */
+.modal-content button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    margin: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+    font-family: Arial, sans-serif;
+}
+
+.modal-content button:hover {
+    background-color: #286090;
+}
+
+/* Styles for the table in the Excel editor dialog */
+.excel-editor-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    font-family: Arial, sans-serif;
+}
+
+.excel-editor-table th,
+.excel-editor-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.excel-editor-table th {
+    background-color: #4CAF50;
+    color: #fff;
+    text-align: center;
+    font-weight: bold;
+}
+
+.excel-editor-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.excel-editor-table tr:nth-child(odd) {
+    background-color: #fff;
+}
+
+/* The table container within the Excel editor modal is made smaller */
+.table-container {
+    max-height: 500px;  /* Decreased maximum height */
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.CodeMirror-fullscreen {
+    position: fixed;
+    top: 10%;
+    left: 10%;
+    right: 10%;
+    bottom: 5%;
+    z-index: 9;
+    resize: both;
+}
