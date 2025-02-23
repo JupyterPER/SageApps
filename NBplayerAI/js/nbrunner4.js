@@ -1067,6 +1067,7 @@ function createModalWindow() {
                 <label for="newKey">API Key:</label>
                 <input type="text" id="newKey" value="${currentApiKey}" placeholder="Enter API key">
             </div>
+            <p>You can obtain a free Mistral API key from <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener noreferrer">Mistral AI Platform</a></p>
             <div class="warning-message" style="color: #e74c3c; margin: 15px 0; padding: 10px; background: #fdecea; border-left: 4px solid #e74c3c;">
                 <strong>⚠️ Security Warning:</strong>
                 <p style="margin: 5px 0;">Remember to remove your API key before sharing this notebook with others. Never share your API key with untrusted persons. Also delete all cells generated after clicking one of the AI buttons containing your API key.</p>
