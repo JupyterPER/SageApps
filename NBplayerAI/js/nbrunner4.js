@@ -40,8 +40,9 @@ function saveHtml() {
 
     const apikey = typeof API_KEY !== 'undefined' ? JSON.stringify(API_KEY) : JSON.stringify('');
     const currentmodel = typeof CURRENT_MODEL !== 'undefined' ? JSON.stringify(CURRENT_MODEL) : JSON.stringify('');
+    const currentlanguage = typeof CURRENT_LANGUAGE !== 'undefined' ? JSON.stringify(CURRENT_LANGUAGE) : JSON.stringify('');
     const delayValue = document.getElementById('delay') ? parseInt(document.getElementById('delay').value) || RUN_DELAY : RUN_DELAY;
-    var e = new Blob(["<!DOCTYPE html>\n<html>\n<head>" + $("head").html() + '</head>\n<body>\n<script src="https://cdn.jsdelivr.net/npm/texme@1.2.2"></script>\n<div id="main">' + $("#main").html() + '</div>\n  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"><\/script>\n  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"><\/script>\n  <script src="https://sagecell.sagemath.org/embedded_sagecell.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/vendor/js/FileSaver.min.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/nbplayerConfig.js"><\/script>\n  <script>let RUN_DELAY = '+ RUN_DELAY +';</script>\n  <script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main/NBplayerAI/js/nbrunner4.js"><\/script>\n  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>\n  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main//NBplayerAI/css/nbplayer.css">\n  <script>\n    playerConfig=' + JSON.stringify(playerConfig) + ";\n    playerMode=" + JSON.stringify(playerMode) + ";\n    makeMenu();\n    localize();\n    loadStatus();\n    makeSageCells(playerConfig);\n    launchPlayer();\n    addControlPanel();\n    setupRunAllCells();\n    window.onload = initializeMarkdownCells;\n    let API_KEY=" + apikey + ";\n    let CURRENT_MODEL=" + currentmodel + ";\n  <\/script>\n</body>\n</html>"], {
+    var e = new Blob(["<!DOCTYPE html>\n<html>\n<head>" + $("head").html() + '</head>\n<body>\n<script src="https://cdn.jsdelivr.net/npm/texme@1.2.2"></script>\n<div id="main">' + $("#main").html() + '</div>\n  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"><\/script>\n  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"><\/script>\n  <script src="https://sagecell.sagemath.org/embedded_sagecell.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/vendor/js/FileSaver.min.js"><\/script>\n  <script src="' + playerConfig.playerPath + '/nbplayerConfig.js"><\/script>\n  <script>let RUN_DELAY = '+ RUN_DELAY +';</script>\n  <script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main/NBplayerAI/js/nbrunner4.js"><\/script>\n  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>\n  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathApplications@main//NBplayerAI/css/nbplayer.css">\n  <script>\n    playerConfig=' + JSON.stringify(playerConfig) + ";\n    playerMode=" + JSON.stringify(playerMode) + ";\n    makeMenu();\n    localize();\n    loadStatus();\n    makeSageCells(playerConfig);\n    launchPlayer();\n    addControlPanel();\n    setupRunAllCells();\n    window.onload = initializeMarkdownCells;\n    let API_KEY=" + apikey + ";\n    let CURRENT_MODEL=" + currentmodel + ";\n    let CURRENT_LANGUAGE=" + currentlanguage + ";\n  <\/script>\n</body>\n</html>"], {
         type: "text/plain;charset=utf-8"
     });
     saveAs(e, playerConfig.name + ".html");
@@ -697,9 +698,9 @@ function addControlBar(cell) {
 
     if (cell.classList.contains('nb-code-cell')) {
         const convertToMarkdownBtn = createButton('Markdown', () => convertToMarkdown(cell));
-        const aiCompleteBtn = createButtonIco('AI Complete', () => formatAndLoadCodeIntoCell(cell, `AI_complete`, CURRENT_MODEL, API_KEY), 'aiComplete');
-        const aiFormatBtn = createButtonIco('AI Format', () => formatAndLoadCodeIntoCell(cell, `AI_format`, CURRENT_MODEL, API_KEY), 'aiFormat');
-        const aiExplainBtn = createButtonIco('AI Explain', () => formatAndLoadCodeIntoCell(cell, `AI_explain`, CURRENT_MODEL, API_KEY), 'aiExplain');
+        const aiCompleteBtn = createButtonIco('AI Complete', () => formatAndLoadCodeIntoCell(cell, `AI_complete`, CURRENT_MODEL, API_KEY, CURRENT_LANGUAGE), 'aiComplete');
+        const aiFormatBtn = createButtonIco('AI Format', () => formatAndLoadCodeIntoCell(cell, `AI_format`, CURRENT_MODEL, API_KEY, CURRENT_LANGUAGE), 'aiFormat');
+        const aiExplainBtn = createButtonIco('AI Explain', () => formatAndLoadCodeIntoCell(cell, `AI_explain`, CURRENT_MODEL, API_KEY, CURRENT_LANGUAGE), 'aiExplain');
         const excelJsonBtn = createButtonIco('Import/Export Excel', () => openExcelImportExportDialog(cell), 'addEditExcel');
 
         controlBar.appendChild(convertToMarkdownBtn);
@@ -730,7 +731,7 @@ function addControlBar(cell) {
     }
 }
 
-function formatAndLoadCodeIntoCell(cell, aiCommand, currentModel, apiKey) {
+function formatAndLoadCodeIntoCell(cell, aiCommand, currentModel, apiKey, currentLanguage) {
     const codeMirror = cell.querySelector('.CodeMirror').CodeMirror;
     if (!codeMirror) {
         console.error('CodeMirror instance was not founf');
@@ -746,7 +747,7 @@ function formatAndLoadCodeIntoCell(cell, aiCommand, currentModel, apiKey) {
 current_query = r'''
 ${currentQuery}
 '''
-language = 'english'
+language = '${currentLanguage}'
 model='${currentModel}'
 
 url = 'https://raw.githubusercontent.com/JupyterPER/SageMathApplications/refs/heads/main/AIcommandsMistral%20NB%20player.py'
@@ -988,7 +989,7 @@ function getCodeFromCell(codeCell, cellIndex) {
 
 
 function createModalWindow() {
-    const currentApiKey = API_KEY
+    const currentApiKey = API_KEY;
     // Remove any existing modal if present
     removeExistingModal();
 
@@ -1013,7 +1014,7 @@ function createModalWindow() {
             width: 80%;
             max-width: 500px;
             border-radius: 5px;
-             top: -40px;
+            position: relative;
         }
         .close {
             float: right;
@@ -1047,7 +1048,7 @@ function createModalWindow() {
     `;
     document.head.appendChild(styleElement);
 
-    // Create modal HTML
+    // Create modal HTML with new language select drop down
     const modalDiv = document.createElement('div');
     modalDiv.id = 'apiKeyModal';
     modalDiv.className = 'modal';
@@ -1064,13 +1065,20 @@ function createModalWindow() {
                 </select>
             </div>
             <div class="input-group">
+                <label for="languageSelect">Select Language:</label>
+                <select id="languageSelect">
+                    <option value="English">English</option>
+                    <option value="Slovak">Slovak</option>
+                </select>
+            </div>
+            <div class="input-group">
                 <label for="newKey">API Key:</label>
                 <input type="text" id="newKey" value="${currentApiKey}" placeholder="Enter API key">
             </div>
             <p>You can obtain a free Mistral API key from <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener noreferrer">Mistral AI Platform</a></p>
             <div class="warning-message" style="color: #e74c3c; margin: 15px 0; padding: 10px; background: #fdecea; border-left: 4px solid #e74c3c;">
                 <strong>⚠️ Security Warning:</strong>
-                <p style="margin: 5px 0;">Remember to remove your API key before sharing this notebook with others. Never share your API key with untrusted persons. Also delete all cells generated after clicking one of the AI buttons containing your API key.</p>
+                <p style="margin: 5px 0;">Remember to remove your API key before sharing this notebook with others. Never share your API key with untrusted persons. Also delete all cells generated after clicking one of the AI buttons that contain your API key.</p>
             </div>
             <button onclick="updateSettings()">Update</button>
         </div>
@@ -1103,14 +1111,16 @@ function removeExistingModal() {
 function updateSettings() {
     const newKey = document.getElementById('newKey').value;
     const selectedModel = document.getElementById('modelSelect').value;
+    const selectedLanguage = document.getElementById('languageSelect').value; // New language option
 
     API_KEY = newKey;
     CURRENT_MODEL = selectedModel;
+    CURRENT_LANGUAGE = selectedLanguage; // Store selected language in a global variable (or handle as needed)
+
     removeExistingModal();
-    console.log(`Updated! Model: ${CURRENT_MODEL}, API Key: ${API_KEY}`);
+    console.log(`Updated! Model: ${CURRENT_MODEL}, API Key: ${API_KEY}, Language: ${CURRENT_LANGUAGE}`);
     removeAllControlBars();
     initializeCells();
-
 }
 
 
