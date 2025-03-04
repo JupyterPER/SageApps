@@ -17,7 +17,7 @@ from IPython.display import IFrame
 
 std = lambda x: npstd(x,ddof=1)
 
-uc.gummy.style = '+-'
+# uc.gummy.style = '+-'
 
 def budget(gvel, gnames, form = 'full', notation='decimal', transpose = False):
     indirect = gnames[0]
