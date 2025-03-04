@@ -1,7 +1,7 @@
 # nacitanie kniznic
 import numpy as np
 import pandas as pd
-import metrolopy as uc
+# import metrolopy as uc
 # import sigfig as sf
 import warnings
 warnings.filterwarnings('ignore') # setting ignore as a parameter
