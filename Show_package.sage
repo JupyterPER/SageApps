@@ -15,6 +15,9 @@ msolve = lambda eqs, var, domain='real': [
 # symbolic vector equations solving
 vsolve = lambda vector, vars: solve([component for component in vector], vars)
 
+# numerical solution
+nsolve = lambda equation, variable: [sol.lhs() == sol.rhs().n() for sol in solve (equation, variable)]
+
 # solving pde of 1st order using sympy
 # https://docs.sympy.org/latest/modules/solvers/pde.html
 def separate(pde,u,X,Y):
