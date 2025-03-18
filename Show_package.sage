@@ -8,15 +8,71 @@ import re
 eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
 
 # multiple independent symbolic equations solving
-rsolve = lambda equation, variable: [sol for sol in solve(equation,variable) if variable.subs(sol).is_real()]
+def rsolve(eqs, var, *args, **kwargs):
+    if not isinstance(var, (list, tuple)):
+        var = [var]
+    sols = solve(eqs, var, *args, **kwargs)
+    return [s for s in sols if all(v.subs(s).is_real() for v in var)]
 msolve = lambda eqs, var, domain='real': [
     rsolve(equation, var) if domain == 'real' else solve(equation, var) 
     for equation in eqs]
+
 # symbolic vector equations solving
 vsolve = lambda vector, vars: solve([component for component in vector], vars)
 
+# General Solve procedure setting numeric, real or positive
+def Solve(eqs, var, numeric=False, real=True, positive=None, *args, **kwargs):
+    if not isinstance(var, (list, tuple)):
+        var = [var]
+    sols = solve(eqs, var, *args, **kwargs)
+    res = []
+    for s in sols:
+        ok = True
+        for v in var:
+            val = v.subs(s)
+            if real and not val.is_real():
+                ok = False
+                break
+            if positive is True and bool(val < 0):
+                ok = False
+                break
+            if positive is False and bool(val >= 0):
+                ok = False
+                break
+        if ok:
+            res.append(s)
+    if numeric:
+        res = [s.lhs()==s.rhs().n() for s in res]        
+    return res
+
+# limits from equations
+def Limit(expr, **kwargs):
+    """
+    Compute the limit of a symbolic expression.
+
+    Parameters:
+    - expr: The symbolic expression to compute the limit of.
+    - **kwargs: Additional keyword arguments to pass to the limit function.
+
+    Returns:
+    - result: The computed limit of the expression.
+    """
+    from operator import eq
+    from sage.symbolic.expression import Expression
+
+    # Check if the expression is an equality
+    if isinstance(expr, Expression) and expr.operator() == eq:
+        # Compute the limit of the left-hand side and right-hand side separately
+        result = limit(expr.lhs(), **kwargs) == limit(expr.rhs(), **kwargs)
+    else:
+        # Compute the limit of the expression
+        result = limit(expr, **kwargs)
+
+    return result
+
 # numerical solution
-nsolve = lambda equation, variable: [sol.lhs() == sol.rhs().n() for sol in solve (equation, variable)]
+def nsolve(eqs, *args, **kwargs):
+    return [sol.lhs() == sol.rhs().n() for sol in solve(eqs, *args, **kwargs)]
 
 # solving pde of 1st order using sympy
 # https://docs.sympy.org/latest/modules/solvers/pde.html
