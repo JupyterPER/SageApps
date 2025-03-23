@@ -111,6 +111,35 @@ def showURL(url, ht=424):
     return IFrame(url, width='100%', height=ht)
 
 
+def showGeo(url, ht=424):
+    """
+    Generates an iframe URL for a GeoGebra applet with specified display settings.
+
+    Parameters:
+    url (str): The URL of the GeoGebra applet.
+    ht (int): The height of the iframe. The default is 424.
+
+    Note: These parameters are appropriate for SageMath worksheets.
+
+    Returns:
+    IFrame: An IFrame object that embeds the GeoGebra applet with 'Reset' and 'Fullscreen' icons.
+    """
+
+    # Extract the id from the given URL
+    applet_id = url.split('/')[-1]
+    
+    # Construct the new URL in the desired iframe format with additional parameters
+    transformed_url = (
+        f"https://www.geogebra.org/material/iframe/id/{applet_id}/sfsb/true/"
+        "smb/false/stb/false/stbh/false/ai/false/asb/false/sri/true/rc/false/"
+        "ld/false/sdz/false/ctl/false"
+    )
+    
+    # Return the IFrame object for embedding
+    return IFrame(transformed_url, width='100%', height=ht)
+
+
+
 def Collect(expr, *kwargs):
     '''
     Collects terms containing common variables  using Maxima:
