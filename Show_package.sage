@@ -105,10 +105,11 @@ def separate_SchE(SchE, psi, phi, T):
 def showURL(url, ht=424):
 
     '''shortcut for IFrame displaying various media at given url address;
-       for interactive SageMath worksheets it is appropriate height 430 and width 100%
+       for interactive SageMath worksheets it is appropriate height 424 and width 100%
     '''
     from IPython.display import IFrame
     return IFrame(url, width='100%', height=ht)
+
 
 def Collect(expr, *kwargs):
     '''
