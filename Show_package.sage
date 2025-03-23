@@ -124,7 +124,7 @@ def showGeo(url, ht=424):
     Returns:
     IFrame: An IFrame object that embeds the GeoGebra applet with 'Reset' and 'Fullscreen' icons.
     """
-
+    from IPython.display import IFrame
     # Extract the id from the given URL
     applet_id = url.split('/')[-1]
     
