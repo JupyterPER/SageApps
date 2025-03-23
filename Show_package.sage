@@ -102,13 +102,13 @@ def separate_SchE(SchE, psi, phi, T):
     sep = separate(SchE.subs(Hpsi == psi.diff(x)), psi, phi, T)
     return sep.subs(phix == Hphi)
 
-def showURL(url, ht=560):
+def showURL(url, ht=424):
 
     '''shortcut for IFrame displaying various media at given url address;
        for interactive SageMath worksheets it is appropriate height 430 and width 100%
     '''
     from IPython.display import IFrame
-    return IFrame(url, width='95%', height=ht)
+    return IFrame(url, width='100%', height=ht)
 
 def Collect(expr, *kwargs):
     '''
