@@ -119,6 +119,14 @@ display(HTML("<style>.container { width:100% !important; }</style>"))
 
 print('The contents of the package have been loaded successfully.')
 
+def showURL(url, ht=424):
+
+    '''shortcut for IFrame displaying various media at given url address;
+       for interactive SageMath worksheets it is appropriate height 424 and width 100%
+    '''
+    from IPython.display import IFrame
+    return IFrame(url, width='100%', height=ht)
+
 def read_google_table(url):
     """
     Read data from a Google Sheets URL and return it as a pandas DataFrame.
