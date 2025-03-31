@@ -56,7 +56,7 @@ import metrolopy as uc
 
 uc.gummy.style = '+-'
 
-def budget(gvel, gnames, form = 'full', notation='decimal', transpose = False):
+def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
     indirect = gnames[0]
     direct = gnames[1:]
     table = gvel[0].budget(gvel[1:], xnames = direct)
