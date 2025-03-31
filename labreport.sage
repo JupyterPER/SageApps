@@ -35,7 +35,7 @@ temp_dir = tempfile.mkdtemp()
 # Download the repository as a zip file
 zip_url = "https://github.com/nrc-cnrc/MetroloPy/archive/refs/heads/master.zip"
 zip_path = os.path.join(temp_dir, "metrolopy.zip")
-print(f"Downloading Metrolopy...")
+print(f"Downloading the package...")
 urllib.request.urlretrieve(zip_url, zip_path)
 
 # Extract the zip file
