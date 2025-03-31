@@ -60,7 +60,7 @@ def budget(gvel, gnames, form = 'full', notation='decimal', transpose = False):
     indirect = gnames[0]
     direct = gnames[1:]
     table = gvel[0].budget(gvel[1:], xnames = direct)
-    if form != 'final':
+    if form != 'full':
         db = table.df.astype(float, errors='ignore')
         db.set_index(['Component'], inplace=True)
         db = db.reindex(direct+[indirect])
