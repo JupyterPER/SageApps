@@ -52,7 +52,7 @@ for item in os.listdir(temp_dir):
 
 sys.path.insert(0, extracted_dir)
 
-import metrolopy as UC
+import metrolopy as uc
 
 uc.gummy.style = '+-'
 
