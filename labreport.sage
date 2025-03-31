@@ -27,7 +27,34 @@ from IPython.display import IFrame
 
 std = lambda x: npstd(x,ddof=1)
 
-# uc.gummy.style = '+-'
+
+#************Metrolopy******************
+# Create a temporary directory
+temp_dir = tempfile.mkdtemp()
+
+# Download the repository as a zip file
+zip_url = "https://github.com/nrc-cnrc/MetroloPy/archive/refs/heads/master.zip"
+zip_path = os.path.join(temp_dir, "metrolopy.zip")
+print(f"Downloading Metrolopy...")
+urllib.request.urlretrieve(zip_url, zip_path)
+
+# Extract the zip file
+with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    zip_ref.extractall(temp_dir)
+
+# The extracted folder will have a name like "MetroloPy-master"
+# Find the correct directory name
+extracted_dir = None
+for item in os.listdir(temp_dir):
+    if os.path.isdir(os.path.join(temp_dir, item)) and item.startswith("MetroloPy-"):
+        extracted_dir = os.path.join(temp_dir, item)
+        break
+
+sys.path.insert(0, extracted_dir)
+
+import metrolopy as UC
+
+uc.gummy.style = '+-'
 
 def budget(gvel, gnames, form = 'full', notation='decimal', transpose = False):
     indirect = gnames[0]
