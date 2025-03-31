@@ -1,10 +1,20 @@
 # nacitanie kniznic
 import numpy as np
 import pandas as pd
+
 # import metrolopy as uc
 # import sigfig as sf
+import sys
+import os
+import tempfile
+import zipfile
+import urllib.request
 import warnings
-warnings.filterwarnings('ignore') # setting ignore as a parameter
+
+# Disable DeprecationWarnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)  # Also helpful for some packages
+#warnings.filterwarnings('ignore') # setting ignore as a parameter
 
 from IPython.display import YouTubeVideo
 from numpy import array as v
