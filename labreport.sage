@@ -14,7 +14,7 @@ import warnings
 # Disable DeprecationWarnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)  # Also helpful for some packages
-warnings.filterwarnings('ignore') # setting ignore as a parameter
+warnings.filterwarnings("ignore", category=SyntaxWarning)  # Do not show No syntax problems
 
 from IPython.display import YouTubeVideo
 from numpy import array as v
