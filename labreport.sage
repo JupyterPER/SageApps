@@ -57,12 +57,12 @@ import metrolopy as uc
 
 uc.gummy.style = '+-'
 
-def budget(gvel, gnames, form = 'full', notation='', transpose = True):
+def budget(gvel, gnames, form = 'final', notation='', transpose = True):
     indirect = gnames[0]
     direct = gnames[1:]
     table = gvel[0].budget(gvel[1:], xnames = direct)
     Unit = gvel[0].budget(gvel[1:], xnames = direct, uunit='%').df['Unit']
-    if form != 'full':
+    if form != 'final':
         db = table.df.astype(float, errors='ignore')
         if not 'Unit' in db.columns:
             db.insert(1r, 'Unit', Unit)
