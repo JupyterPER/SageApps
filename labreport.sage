@@ -1,3 +1,5 @@
+print("Downloading the package...")
+
 # nacitanie kniznic
 import numpy as np
 import pandas as pd
@@ -71,7 +73,6 @@ def import_github_package(github_repo_url, module_name, branch='master'):
     imported_module = __import__(module_name.lower())
     return imported_module
 
-print("Downloading the package...")
 # Sigfig package
 repo = "https://github.com/drakegroup/sigfig" 
 module = "sigfig"
