@@ -61,19 +61,25 @@ def budget(gvel, gnames, form = 'full', notation='decimal', transpose = True):
     indirect = gnames[0]
     direct = gnames[1:]
     table = gvel[0].budget(gvel[1:], xnames = direct)
+    Unit = gvel[0].budget(gvel[1:], xnames = direct, uunit='%').df['Unit']
     if form != 'full':
         db = table.df.astype(float, errors='ignore')
+        if not 'Unit' in db.columns:
+            db.insert(1r, 'Unit', Unit)
         db.set_index(['Component'], inplace=True)
         db = db.reindex(direct+[indirect])
         db.drop(columns='s', inplace=True)
         db['vars'] = (db['u']*db['|dy/dx|'])**2
         db.loc[indirect,'vars'] = db['vars'].sum() 
         db.loc[indirect,'|dy/dx|'] = 1 
+        db.loc[indirect,'u'] = np.sqrt(db.loc[indirect,'vars'])
         db['rel. vars %'] = db['vars']/db.loc[indirect,'u']**2*100
         db['rel. u %'] = db['u']/db['Value']*100
         db.set_index(['Unit'], append=True, inplace=True)
         if notation == 'decimal':
             table = db.fillna('').astype(str)
+        elif notation == 'scientific':
+            table = db.applymap(lambda x: f"{float(x):.2e}" if isinstance(x, (int, float)) else x)
         else:
             table = db.fillna('')
         if transpose:
