@@ -29,30 +29,59 @@ from IPython.display import IFrame
 std = lambda x: npstd(x,ddof=1)
 
 
-#************Metrolopy******************
-# Create a temporary directory
-temp_dir = tempfile.mkdtemp()
+def import_github_package(github_repo_url, module_name, branch='master'):
+    """
+    Downloads a GitHub repository as a zip file, extracts it,
+    adds it to sys.path, and imports the specified module.
 
-# Download the repository as a zip file
-zip_url = "https://github.com/nrc-cnrc/MetroloPy/archive/refs/heads/master.zip"
-zip_path = os.path.join(temp_dir, "metrolopy.zip")
-print(f"Downloading the package...")
-urllib.request.urlretrieve(zip_url, zip_path)
+    Parameters:
+      github_repo_url (str): The URL of the GitHub repository.
+      module_name (str): The name of the package/module to import.
+      branch (str): The branch to download (default is 'master').
 
-# Extract the zip file
-with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-    zip_ref.extractall(temp_dir)
+    Returns:
+      module: The imported module.
+    """
+    # Create a temporary directory
+    temp_dir = tempfile.mkdtemp()
 
-# The extracted folder will have a name like "MetroloPy-master"
-# Find the correct directory name
-extracted_dir = None
-for item in os.listdir(temp_dir):
-    if os.path.isdir(os.path.join(temp_dir, item)) and item.startswith("MetroloPy-"):
-        extracted_dir = os.path.join(temp_dir, item)
-        break
+    # Construct the zip file URL (assumes the repository is public)
+    zip_url = f"{github_repo_url}/archive/refs/heads/{branch}.zip"
+    zip_path = os.path.join(temp_dir, f"{module_name.lower()}.zip")
+    print("Downloading the package...")
+    urllib.request.urlretrieve(zip_url, zip_path)
 
-sys.path.insert(0, extracted_dir)
+    # Extract the zip file
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(temp_dir)
 
+    # The extracted folder usually has a name like "{module_name}-{branch}"
+    extracted_dir = None
+    for item in os.listdir(temp_dir):
+        if os.path.isdir(os.path.join(temp_dir, item)) and item.startswith(module_name + "-"):
+            extracted_dir = os.path.join(temp_dir, item)
+            break
+
+    if extracted_dir is None:
+        raise Exception("Failed to locate the extracted package directory.")
+
+    # Add the extracted directory to sys.path
+    sys.path.insert(0, extracted_dir)
+
+    # Import and return the module
+    imported_module = __import__(module_name.lower())
+    return imported_module
+
+# Sigfig package
+repo = "https://github.com/drakegroup/sigfig" 
+module = "sigfig"
+package = import_github_package(repo, module)
+import sigfig as sf
+
+# Metrolopy package
+repo = "https://github.com/nrc-cnrc/MetroloPy" 
+module = "MetroloPy"
+package = import_github_package(repo, module)
 import metrolopy as uc
 
 uc.gummy.style = '+-'
