@@ -18,6 +18,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)  # Also helpful for so
 
 from IPython.display import YouTubeVideo
 from numpy import array as v
+sv = lambda zoznam: vector(zoznam)
 from numpy import float64 as dc
 from numpy import sqrt
 from scipy.stats import sem
