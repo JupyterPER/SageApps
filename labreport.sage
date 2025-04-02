@@ -48,7 +48,6 @@ def import_github_package(github_repo_url, module_name, branch='master'):
     # Construct the zip file URL (assumes the repository is public)
     zip_url = f"{github_repo_url}/archive/refs/heads/{branch}.zip"
     zip_path = os.path.join(temp_dir, f"{module_name.lower()}.zip")
-    print("Downloading the package...")
     urllib.request.urlretrieve(zip_url, zip_path)
 
     # Extract the zip file
@@ -72,6 +71,7 @@ def import_github_package(github_repo_url, module_name, branch='master'):
     imported_module = __import__(module_name.lower())
     return imported_module
 
+print("Downloading the package...")
 # Sigfig package
 repo = "https://github.com/drakegroup/sigfig" 
 module = "sigfig"
