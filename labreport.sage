@@ -99,6 +99,10 @@ def budget(gvel, gnames, form = 'final', notation='', transpose = True):
         db.set_index(['Component'], inplace=True)
         db = db.reindex(direct+[indirect])
         db.drop(columns='s', inplace=True)
+        dydx = db['|dy/dx|']
+        db.drop(columns='|dy/dx|', inplace=True)
+        db['rel. u %'] = db['u']/db['Value']*100
+        db['|dy/dx|'] = dydx 
         db['|dy/dx|.u'] = db['u']*db['|dy/dx|']
         db['vars'] = (db['u']*db['|dy/dx|'])**2
         db.loc[indirect,'vars'] = db['vars'].sum() 
@@ -106,7 +110,6 @@ def budget(gvel, gnames, form = 'final', notation='', transpose = True):
         db.loc[indirect,'u'] = np.sqrt(db.loc[indirect,'vars'])
         db.loc[indirect,'|dy/dx|.u'] = db.loc[indirect,'u']
         db['rel. vars %'] = db['vars']/db.loc[indirect,'u']**2*100
-        db['rel. u %'] = db['u']/db['Value']*100
         db.set_index(['Unit'], append=True, inplace=True)
         if notation == 'decimal':
             table = db.fillna('').astype(str)
