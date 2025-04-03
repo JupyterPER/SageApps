@@ -99,6 +99,7 @@ def budget(gvel, gnames, form = 'final', notation='', transpose = True):
         db.set_index(['Component'], inplace=True)
         db = db.reindex(direct+[indirect])
         db.drop(columns='s', inplace=True)
+        db['|dy/dx|.u'] = db['u']*db['|dy/dx|']
         db['vars'] = (db['u']*db['|dy/dx|'])**2
         db.loc[indirect,'vars'] = db['vars'].sum() 
         db.loc[indirect,'|dy/dx|'] = 1 
