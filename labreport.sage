@@ -111,6 +111,7 @@ def budget(gvel, gnames, form = 'final', notation='', transpose = True):
         db.loc[indirect,'rel. u %'] = db.loc[indirect,'u']/db.loc[indirect,'Value']*100
         db.loc[indirect,'|dy/dx|.u'] = db.loc[indirect,'u']
         db['rel. vars %'] = db['vars']/db.loc[indirect,'u']**2*100
+        db['s'] = np.sqrt(db['rel. vars %'])
         db.set_index(['Unit'], append=True, inplace=True)
         if notation == 'decimal':
             table = db.fillna('').astype(str)
