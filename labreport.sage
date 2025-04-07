@@ -74,10 +74,10 @@ def import_github_package(github_repo_url, module_name, branch='master'):
     return imported_module
 
 # Sigfig package
-repo = "https://github.com/drakegroup/sigfig" 
-module = "sigfig"
-package = import_github_package(repo, module)
-import sigfig as sf
+# repo = "https://github.com/drakegroup/sigfig" 
+# module = "sigfig"
+# package = import_github_package(repo, module)
+# import sigfig as sf
 
 # Metrolopy package
 repo = "https://github.com/nrc-cnrc/MetroloPy" 
