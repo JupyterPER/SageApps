@@ -432,4 +432,4 @@ def Show(expr, partial=True, compact=False, simplify=True, notation='leibniz'):
     elif notation=='dot':
         return show(dot_not(expr, simplify))
         
-# print('The package was successfully loaded!!!')  
+print('The package was successfully loaded!!!')  
