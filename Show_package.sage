@@ -86,13 +86,18 @@ def is_matrix(expr):
 
 
 def trig_form(expr, simplify=True):
-    M = expr._maxima_().demoivre()._sage_()
-    if simplify:
-        if is_matrix(M):
+    # Ak je expr maticou (alebo vektorom, ktorý uvažujeme ako maticu)
+    if is_matrix(expr):
+        M = expr.apply_map(lambda x: x._maxima_().demoivre()._sage_())
+        if simplify:
             M = M.apply_map(lambda x: x.simplify_trig().reduce_trig())
-        else:
-            M.simplify_trig().reduce_trig()
+    else:
+        # Pre výraz, ktorý nie je maticou ani vektorom
+        M = expr._maxima_().demoivre()._sage_()
+        if simplify:
+            M = M.simplify_trig().reduce_trig()
     return M
+
 
 # numerical solution
 def nsolve(eqs, *args, **kwargs):
