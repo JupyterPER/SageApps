@@ -71,7 +71,19 @@ def Limit(expr, **kwargs):
     return result
 
 def is_matrix(expr):
-    return hasattr(expr, 'nrows') and hasattr(expr, 'ncols') and callable(expr.nrows) and callable(expr.ncols)
+    # Ak má expr metódy nrows() a ncols(), považujeme ho za maticu.
+    if hasattr(expr, 'nrows') and hasattr(expr, 'ncols') and callable(expr.nrows) and callable(expr.ncols):
+        return True
+    # Ak expr má metódu column(), ide o vektor, ktorý môže byť chápaný ako matica (stĺpcová).
+    if hasattr(expr, 'column') and callable(expr.column):
+        try:
+            expr.column()  # pokus o prevod na stĺpcovú maticu
+            return True
+        except Exception:
+            return False
+    # Inak to nie je maticový objekt.
+    return False
+
 
 def trig_form(expr, simplify=True):
     M = expr._maxima_().demoivre()._sage_()
