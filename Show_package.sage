@@ -70,6 +70,18 @@ def Limit(expr, **kwargs):
 
     return result
 
+def is_matrix(expr):
+    return hasattr(expr, 'nrows') and hasattr(expr, 'ncols') and callable(expr.nrows) and callable(expr.ncols)
+
+def trig_form(expr, simplify=True):
+    M = expr._maxima_().demoivre()._sage_()
+    if simplify:
+        if is_matrix(M):
+            M = M.apply_map(lambda x: x.simplify_trig().reduce_trig())
+        else:
+            M.simplify_trig().reduce_trig()
+    return M
+
 # numerical solution
 def nsolve(eqs, *args, **kwargs):
     return [sol.lhs() == sol.rhs().n() for sol in solve(eqs, *args, **kwargs)]
