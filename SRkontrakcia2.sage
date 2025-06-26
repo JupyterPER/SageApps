@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-q_slider=slider(np.arange(0, 0.99, 0.01), default=0.1,label=r'$q$ =')
+q_slider=slider([0, 0.01 .. 0.99], default=0.1,label=r'$q$ =')
 
 np.random.seed(1010)
 var('m')
