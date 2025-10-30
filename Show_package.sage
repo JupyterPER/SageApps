@@ -168,6 +168,60 @@ def showGeo(url, ht=424):
     # Return the IFrame object for embedding
     return IFrame(transformed_url, width='100%', height=ht)
 
+def set_simp(spec="ctf"):
+    """
+    Build a simplifier `simp` from a spec that can be:
+      - a string of shortcuts, e.g. "c", "ct", "ctf", "fct"
+      - a tuple/list of shortcuts or method names, e.g. ("c","reduce_trig","f")
+      - a tuple/list of callables taking one arg, e.g. (lambda x: x.simplify_full(),)
+    Shortcuts:
+      c -> canonicalize_radical
+      t -> reduce_trig
+      f -> factor
+    You can also use full method names: "canonicalize_radical", "reduce_trig", "factor".
+    Order is exactly the order you give.
+    """
+
+    shortcut = {
+        "c": "canonicalize_radical",
+        "t": "reduce_trig",
+        "f": "factor",
+    }
+
+    # Normalize spec to a list
+    if isinstance(spec, str):
+        steps_in = list(spec)  # e.g., "fct" -> ["f","c","t"]
+    elif isinstance(spec, (tuple, list)):
+        steps_in = list(spec)
+    else:
+        raise TypeError("spec must be a string, tuple, or list")
+
+    # Build executable steps
+    steps = []
+    for item in steps_in:
+        if callable(item):
+            steps.append(item)
+            continue
+        if not isinstance(item, str):
+            raise TypeError(f"Step {item!r} must be a string or callable")
+
+        # expand shortcuts to method names if present
+        method_name = shortcut.get(item, item)
+
+        # capture method_name in default arg so lambdas don't late-bind
+        steps.append(lambda y, _mn=method_name: getattr(y, _mn)())
+
+    # The actual simplifier
+    def simp(objekt):
+        y = objekt
+        for step in steps:
+            # be defensive: if step is a string by accident, raise a clear error
+            if not callable(step):
+                raise ValueError(f"Invalid step {step!r}, expected callable")
+            y = step(y)
+        return y
+
+    return simp
 
 
 def Collect(expr, *kwargs):
