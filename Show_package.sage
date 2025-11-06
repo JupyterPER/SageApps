@@ -7,6 +7,8 @@ import re
 # definition of Levi-Civita symbol
 eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
 
+v = lambda plist: vector(plist)
+
 # multiple independent symbolic equations solving
 def rsolve(eqs, var, *args, **kwargs):
     if not isinstance(var, (list, tuple)):
