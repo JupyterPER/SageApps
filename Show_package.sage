@@ -99,6 +99,11 @@ def trig_form(expr, simplify=True):
     return M
 
 
+def replace_column(A, j, col):
+    M = matrix(A)         # fresh matrix
+    M.set_column(j, col)  # mutate the copy
+    return M
+
 # numerical solution
 def nsolve(eqs, *args, **kwargs):
     return [sol.lhs() == sol.rhs().n() for sol in solve(eqs, *args, **kwargs)]
