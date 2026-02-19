@@ -100,6 +100,55 @@ def trig_form(expr, simplify=True):
             M = M.simplify_trig().reduce_trig()
     return M
 
+def euler_form(expr, simplify=False):
+    # Ak je expr maticou (alebo vektorom, ktorý uvažujeme ako maticu)
+    if is_matrix(expr):
+        M = expr.apply_map(lambda x: x._maxima_().polarform()._sage_())
+        if simplify:
+            M = M.apply_map(lambda x: x.canonicalize_radical().expand())
+    else:
+        # Pre výraz, ktorý nie je maticou ani vektorom
+        M = expr._maxima_().polarform()._sage_()
+        if simplify:
+            M = M.canonicalize_radical().expand()
+    return M
+
+def Abs(expr, simplify=False):
+    # Ak je expr maticou (alebo vektorom)
+    if is_matrix(expr):
+        M = expr.apply_map(lambda x: x._maxima_().cabs()._sage_())
+        if simplify:
+            M = M.apply_map(lambda x: x.canonicalize_radical().expand())
+    else:
+        M = expr._maxima_().cabs()._sage_()
+        if simplify:
+            M = M.canonicalize_radical().expand()
+    return M
+
+
+def Arg(expr, simplify=False):
+    # Ak je expr maticou (alebo vektorom)
+    if is_matrix(expr):
+        M = expr.apply_map(lambda x: x._maxima_().carg()._sage_())
+        if simplify:
+            M = M.apply_map(lambda x: x.canonicalize_radical().expand())
+    else:
+        M = expr._maxima_().carg()._sage_()
+        if simplify:
+            M = M.canonicalize_radical().expand()
+    return M
+
+def algebra_form(expr, simplify=False):
+    # Ak je expr maticou (alebo vektorom)
+    if is_matrix(expr):
+        M = expr.apply_map(lambda x: x._maxima_().rectform()._sage_())
+        if simplify:
+            M = M.apply_map(lambda x: x.canonicalize_radical().expand())
+    else:
+        M = expr._maxima_().rectform()._sage_()
+        if simplify:
+            M = M.canonicalize_radical().expand()
+    return M
 
 def replace_column(A, j, col):
     M = matrix(A)         # fresh matrix
