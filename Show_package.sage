@@ -100,18 +100,26 @@ def trig_form(expr, simplify=True):
             M = M.simplify_trig().reduce_trig()
     return M
 
-def euler_form(expr, simplify=False):
-    # Ak je expr maticou (alebo vektorom, ktorý uvažujeme ako maticu)
+def euler_form(expr, simplify=False, force_atan2_subst=True):
+    def process(e):
+        # Maxima polar form -> Sage expression
+        E = e._maxima_().polarform()._sage_().simplify_trig().reduce_trig()
+
+        if force_atan2_subst:
+            # Replace atan2(sin(v),cos(v)) by v for each variable v in E
+            for v in E.variables():
+                E = E.subs(atan2(sin(v), cos(v)) == v)
+
+        if simplify:
+            E = E.canonicalize_radical().expand()
+
+        return E
+
     if is_matrix(expr):
-        M = expr.apply_map(lambda x: x._maxima_().polarform()._sage_())
-        if simplify:
-            M = M.apply_map(lambda x: x.canonicalize_radical().expand())
+        return expr.apply_map(process)
     else:
-        # Pre výraz, ktorý nie je maticou ani vektorom
-        M = expr._maxima_().polarform()._sage_()
-        if simplify:
-            M = M.canonicalize_radical().expand()
-    return M
+        return process(expr)
+
 
 def Abs(expr, simplify=False):
     # Ak je expr maticou (alebo vektorom)
