@@ -100,92 +100,6 @@ def trig_form(expr, simplify=True):
             M = M.simplify_trig().reduce_trig()
     return M
 
-def euler_form(expr, numeric=False, simplify=False, force_atan2_subst=True, digits=16):
-    """
-    Convert expression(s) to Euler/polar form using Maxima polarform for symbolic,
-    or abs/arg for purely numeric expressions.
-
-    Parameters
-    ----------
-    expr : Sage expression, matrix, or vector
-    numeric : bool
-        If True, attempt numeric polar form only when expression has no symbolic vars.
-    simplify : bool
-        If True (symbolic path), apply canonicalize_radical().expand().
-    force_atan2_subst : bool
-        If True, substitute atan2(sin(v),cos(v)) -> v for each variable v (symbolic path).
-    digits : int
-        Digits for numerical evaluation (numeric path).
-    """
-
-    # Localize globals for speed
-    _is_matrix = is_matrix
-    _SR = SR
-    _atan2, _sin, _cos = atan2, sin, cos
-    _abs, _arg = abs, arg
-    _exp, _I = exp, I
-
-    # Pre-build method chain (avoids repeated attribute lookups)
-    def _polar_symbolic(e):
-        # Maxima conversion once
-        E = e._maxima_().polarform()._sage_()
-        # Keep your original trig cleanup
-        E = E.simplify_trig().reduce_trig()
-        return E
-
-    # Cheap "has symbolic variables?" check:
-    # - First try .variables() (native)
-    # - Fallback to SR(e).variables() only if needed
-    def _has_symbolic_vars(e):
-        vfun = getattr(e, "variables", None)
-        if vfun is not None:
-            try:
-                return bool(vfun())
-            except Exception:
-                pass
-        try:
-            return bool(_SR(e).variables())
-        except Exception:
-            return False
-
-    def _process_symbolic(e):
-        E = _polar_symbolic(e)
-
-        if force_atan2_subst:
-            vfun = getattr(E, "variables", None)
-            if vfun is not None:
-                try:
-                    vars_ = vfun()
-                except Exception:
-                    vars_ = ()
-            else:
-                vars_ = ()
-
-            # Only loop if we actually have variables
-            for v in vars_:
-                E = E.subs(_atan2(_sin(v), _cos(v)) == v)
-
-        if simplify:
-            E = E.canonicalize_radical().expand()
-
-        return E
-
-    def _process_numeric(e):
-        r = _abs(e).n(digits=digits)
-        theta = _arg(e).n(digits=digits)
-        # keep exp(I*theta, hold=True) semantics
-        return r * _exp(_I * theta, hold=True)
-
-    def _process(e):
-        # numeric path only if requested AND expression is truly variable-free
-        if numeric and (not _has_symbolic_vars(e)):
-            return _process_numeric(e)
-        return _process_symbolic(e)
-
-    if _is_matrix(expr):
-        return expr.apply_map(_process)
-    return _process(expr)
-
 def Re(expr, simplify=True):
     # Ak je expr maticou (alebo vektorom)
     if is_matrix(expr):
@@ -248,6 +162,55 @@ def algebra_form(expr, simplify=False):
         if simplify:
             M = M.canonicalize_radical().expand()
     return M
+
+def euler_form(expr, numeric=False, digits=16,
+               simplify=True, force_atan2_subst=True, simplify_absarg=False):
+    """
+    Euler/polar form using your Abs/Arg (Maxima cabs/carg).
+
+    - For symbolic: returns Abs(z) * exp(I*Arg(z), hold=True) with cleanup.
+    - For numeric=True: additionally evaluates Abs/Arg to decimals with given digits.
+    """
+
+    _is_matrix = is_matrix
+    _exp, _I = exp, I
+    _atan2, _sin, _cos = atan2, sin, cos
+
+    def _simp_trig(e):
+        return e.simplify_trig().reduce_trig() if simplify else e
+
+    def _postprocess_theta(theta):
+        th = _simp_trig(theta)
+        if force_atan2_subst:
+            try:
+                vars_ = th.variables()
+            except Exception:
+                vars_ = ()
+            for v in vars_:
+                th = th.subs(_atan2(_sin(v), _cos(v)) == v)
+        return _simp_trig(th)
+
+    def _one(z):
+        r = Abs(z, simplify=simplify_absarg)
+        th = Arg(z, simplify=simplify_absarg)
+
+        if numeric:
+            r = r.n(digits=digits)
+            th = th.n(digits=digits)
+            return r * _exp(_I * th, hold=True)
+
+        r = _simp_trig(r)
+        th = _postprocess_theta(th)
+
+        # Ak sa |z| zjednoduší na 1, vráť priamo exp(i*theta)
+        if r == 1:
+            return _exp(_I * th, hold=True)
+
+        return r * _exp(_I * th, hold=True)
+
+    if _is_matrix(expr):
+        return expr.apply_map(_one)
+    return _one(expr)
 
 def replace_column(A, j, col):
     M = matrix(A)         # fresh matrix
