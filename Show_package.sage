@@ -186,6 +186,31 @@ def euler_form(expr, numeric=False, simplify=False, force_atan2_subst=True, digi
         return expr.apply_map(_process)
     return _process(expr)
 
+def Re(expr, simplify=True):
+    # Ak je expr maticou (alebo vektorom)
+    if is_matrix(expr):
+        M = expr.apply_map(lambda x: x._maxima_().realpart()._sage_())
+        if simplify:
+            M = M.apply_map(lambda x: x.canonicalize_radical().expand())
+    else:
+        M = expr._maxima_().realpart()._sage_()
+        if simplify:
+            M = M.canonicalize_radical().expand()
+    return M
+
+
+def Im(expr, simplify=True):
+    # Ak je expr maticou (alebo vektorom)
+    if is_matrix(expr):
+        M = expr.apply_map(lambda x: x._maxima_().imagpart()._sage_())
+        if simplify:
+            M = M.apply_map(lambda x: x.canonicalize_radical().expand())
+    else:
+        M = expr._maxima_().imagpart()._sage_()
+        if simplify:
+            M = M.canonicalize_radical().expand()
+    return M
+
 
 def Abs(expr, simplify=False):
     # Ak je expr maticou (alebo vektorom)
