@@ -112,6 +112,7 @@ def Re(expr, simplify=True):
             M = M.canonicalize_radical().expand()
     return M
 
+j = I*0+sqrt(-1)
 
 def Im(expr, simplify=True):
     # Ak je expr maticou (alebo vektorom)
