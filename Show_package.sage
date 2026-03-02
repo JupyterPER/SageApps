@@ -620,7 +620,7 @@ def showmath_short(expr, partial=True, compact = False, vector_or_matrix=False):
 
 #################
 
-def Show(expr, partial=False, compact=False, simplify=True, notation='leibniz'):
+def Show(expr, partial=True, compact=False, simplify=True, notation='leibniz'):
     if notation=='leibniz':
         if is_iterable(expr):
             if 'list' in str(type(expr)):
