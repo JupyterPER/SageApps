@@ -4,7 +4,7 @@ from sympy.printing import latex as Latex
 from IPython.display import Math 
 import re
 
-def SVD(B, exact=False):
+def SVD(B, exact=True):
     if exact:
         U,S,V = B._sympy_().singular_value_decomposition()
         return U._sage_(), S._sage_(), V._sage_()
