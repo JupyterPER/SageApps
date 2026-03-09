@@ -4,6 +4,14 @@ from sympy.printing import latex as Latex
 from IPython.display import Math 
 import re
 
+def SVD(B, exact=False):
+    if exact:
+        U,S,V = B._sympy_().singular_value_decomposition()
+        return U._sage_(), S._sage_(), V._sage_()
+    else:
+        U,S,V = B.change_ring(CDF).SVD() 
+        return U,S,V 
+
 # definition of Levi-Civita symbol
 eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
 
