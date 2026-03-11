@@ -80,9 +80,9 @@ def import_github_package(github_repo_url, module_name, branch='master'):
 # import sigfig as sf
 
 # Metrolopy package
-repo = "https://github.com/nrc-cnrc/MetroloPy" 
-module = "MetroloPy"
-package = import_github_package(repo, module)
+# repo = "https://github.com/nrc-cnrc/MetroloPy" 
+# module = "MetroloPy"
+# package = import_github_package(repo, module)
 import metrolopy as uc
 
 uc.gummy.style = '+-'
