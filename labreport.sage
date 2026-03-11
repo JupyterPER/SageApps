@@ -23,13 +23,14 @@ from numpy import array as v
 sv = lambda zoznam: vector(zoznam)
 from numpy import float64 as dc
 from numpy import sqrt
-from scipy.stats import sem
-from numpy import mean
+from scipy.stats import stsem
+from numpy import npmean
 from numpy import std as npstd
 from IPython.display import IFrame
 
-std = lambda x: npstd(x,ddof=1)
-
+std = lambda x: npstd(x,ddof=1).item()
+mean = lambda x: npmean(x).item()
+sem = lambda x: stsem(x).item()
 
 def import_github_package(github_repo_url, module_name, branch='master'):
     """
