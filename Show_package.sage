@@ -301,12 +301,13 @@ def set_simp(spec="ctf"):
       - a string of shortcuts, e.g. "c", "ct", "ctf", "fct"
       - a tuple/list of shortcuts or method names, e.g. ("c","reduce_trig","f")
       - a tuple/list of callables taking one arg, e.g. (lambda x: x.simplify_full(),)
+
     Shortcuts:
       c -> canonicalize_radical
       t -> reduce_trig
       f -> factor
-    You can also use full method names: "canonicalize_radical", "reduce_trig", "factor".
-    Order is exactly the order you give.
+
+    Works both for symbolic expressions and matrices of symbolic expressions.
     """
 
     shortcut = {
@@ -315,37 +316,56 @@ def set_simp(spec="ctf"):
         "f": "factor",
     }
 
-    # Normalize spec to a list
     if isinstance(spec, str):
-        steps_in = list(spec)  # e.g., "fct" -> ["f","c","t"]
+        steps_in = list(spec)
     elif isinstance(spec, (tuple, list)):
         steps_in = list(spec)
     else:
         raise TypeError("spec must be a string, tuple, or list")
 
-    # Build executable steps
+    def apply_step(obj, step):
+        # 1. Ak objekt vie krok aplikovať priamo, použijeme to
+        if callable(step):
+            try:
+                return step(obj)
+            except Exception:
+                # 2. Ak je to matica, skúsime krok po prvkoch
+                if hasattr(obj, "apply_map"):
+                    return obj.apply_map(step)
+                raise
+
+        raise TypeError(f"Invalid step {step!r}, expected callable")
+
     steps = []
     for item in steps_in:
         if callable(item):
             steps.append(item)
             continue
+
         if not isinstance(item, str):
             raise TypeError(f"Step {item!r} must be a string or callable")
 
-        # expand shortcuts to method names if present
         method_name = shortcut.get(item, item)
 
-        # capture method_name in default arg so lambdas don't late-bind
-        steps.append(lambda y, _mn=method_name: getattr(y, _mn)())
+        def make_step(name):
+            def step(y):
+                # ak má objekt metódu priamo, zavolaj ju
+                if hasattr(y, name):
+                    return getattr(y, name)()
 
-    # The actual simplifier
+                # ak ide o maticu, aplikuj po prvkoch
+                if hasattr(y, "apply_map"):
+                    return y.apply_map(lambda z: getattr(z, name)())
+
+                raise AttributeError(f"Object {y!r} has no method {name!r}")
+            return step
+
+        steps.append(make_step(method_name))
+
     def simp(objekt):
         y = objekt
         for step in steps:
-            # be defensive: if step is a string by accident, raise a clear error
-            if not callable(step):
-                raise ValueError(f"Invalid step {step!r}, expected callable")
-            y = step(y)
+            y = apply_step(y, step)
         return y
 
     return simp
