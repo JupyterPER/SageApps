@@ -21,11 +21,12 @@ def sort_svd_sage(U, S, V):
     return U_new, S_new, V_new
 
 
-def SVD(B, exact=True, sort=True):
+def SVD(B, exact=True, digits=None, sort=True):
     if exact:
         U, S, V = B._sympy_().singular_value_decomposition()
         U, S, V = U._sage_(), S._sage_(), V._sage_()
 
+        # SymPy reduced SVD may return singular values unsorted
         if sort:
             try:
                 U, S, V = sort_svd_sage(U, S, V)
@@ -36,6 +37,12 @@ def SVD(B, exact=True, sort=True):
 
     else:
         U, S, V = B.change_ring(CDF).SVD()
+
+        if digits is not None:
+            U = U.apply_map(lambda x: x.n(digits=digits))
+            S = S.apply_map(lambda x: x.n(digits=digits))
+            V = V.apply_map(lambda x: x.n(digits=digits))
+
         return U, S, V
 
 
