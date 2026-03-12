@@ -21,7 +21,7 @@ def sort_svd_sage(U, S, V):
     return U_new, S_new, V_new
 
 
-def SVD(B, exact=True, digits=None, sort=True):
+def SVD(B, exact=True, digits=None, full=True, sort=True):
     if exact:
         U, S, V = B._sympy_().singular_value_decomposition()
         U, S, V = U._sage_(), S._sage_(), V._sage_()
@@ -32,6 +32,17 @@ def SVD(B, exact=True, digits=None, sort=True):
                 U, S, V = sort_svd_sage(U, S, V)
             except Exception:
                 pass
+
+        if full:
+            m, r = U.dimensions()
+            n = V.nrows()
+
+            ker_Ut = matrix(U.transpose().right_kernel().basis()).transpose()
+            ker_Vt = matrix(V.transpose().right_kernel().basis()).transpose()
+
+            U = QR(U.augment(ker_Ut))[0]
+            V = QR(V.augment(ker_Vt))[0]
+            S = S.stack(matrix(m - r, r, 0)).augment(matrix(m, n - r, 0))
 
         return U, S, V
 
