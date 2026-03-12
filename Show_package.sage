@@ -9,6 +9,27 @@ eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1,
 
 v = lambda plist: vector(plist)
 
+def singularvalues(A, exact=True, digits=None, sort=True):
+    if exact:
+        s = A._sympy_().singular_values()
+        s = [x._sage_() for x in s]
+
+        if sort:
+            try:
+                s = sorted(s, key=lambda x: x.n(), reverse=True)
+            except Exception:
+                pass
+
+        return s
+
+    else:
+        s = A.change_ring(CDF).singular_values()
+
+        if digits is not None:
+            s = [x.n(digits=digits) for x in s]
+
+        return s
+
 def sort_svd_sage(U, S, V):
     sing = list(S.diagonal())
     sing_num = [s.n() for s in sing]
