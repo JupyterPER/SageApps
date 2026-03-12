@@ -4,18 +4,41 @@ from sympy.printing import latex as Latex
 from IPython.display import Math 
 import re
 
-def SVD(B, exact=True):
-    if exact:
-        U,S,V = B._sympy_().singular_value_decomposition()
-        return U._sage_(), S._sage_(), V._sage_()
-    else:
-        U,S,V = B.change_ring(CDF).SVD() 
-        return U,S,V 
-
 # definition of Levi-Civita symbol
 eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
 
 v = lambda plist: vector(plist)
+
+def sort_svd_sage(U, S, V):
+    sing = list(S.diagonal())
+    sing_num = [s.n() for s in sing]
+    perm = sorted(range(len(sing_num)), key=lambda i: sing_num[i], reverse=True)
+
+    U_new = U.matrix_from_columns(perm)
+    V_new = V.matrix_from_columns(perm)
+    S_new = diagonal_matrix([sing[i] for i in perm])
+
+    return U_new, S_new, V_new
+
+
+def SVD(B, exact=True, sort=True):
+    if exact:
+        U, S, V = B._sympy_().singular_value_decomposition()
+        U, S, V = U._sage_(), S._sage_(), V._sage_()
+
+        if sort:
+            try:
+                U, S, V = sort_svd_sage(U, S, V)
+            except Exception:
+                pass
+
+        return U, S, V
+
+    else:
+        U, S, V = B.change_ring(CDF).SVD()
+        return U, S, V
+
+
 
 # multiple independent symbolic equations solving
 def rsolve(eqs, var, *args, **kwargs):
