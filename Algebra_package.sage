@@ -57,6 +57,9 @@ def QR(B, exact=True, digits=None):
         return Q, R
 
 def SVD(B, exact=True, digits=None, full=True, sort=True):
+
+    m, n = B.dimensions()
+
     if exact:
         U, S, V = B._sympy_().singular_value_decomposition()
         U, S, V = U._sage_(), S._sage_(), V._sage_()
@@ -69,15 +72,18 @@ def SVD(B, exact=True, digits=None, full=True, sort=True):
                 pass
 
         if full:
-            m, r = U.dimensions()
-            n = V.nrows()
 
-            ker_Ut = matrix(U.transpose().right_kernel().basis()).transpose()
-            ker_Vt = matrix(V.transpose().right_kernel().basis()).transpose()
+            # check if already full
+            if not (U.ncols() == m and V.ncols() == n and S.dimensions() == (m, n)):
 
-            U = QR(U.augment(ker_Ut))[0]
-            V = QR(V.augment(ker_Vt))[0]
-            S = S.stack(matrix(m - r, r, 0)).augment(matrix(m, n - r, 0))
+                r = U.ncols()
+
+                ker_Ut = matrix(U.transpose().right_kernel().basis()).transpose()
+                ker_Vt = matrix(V.transpose().right_kernel().basis()).transpose()
+
+                U = QR(U.augment(ker_Ut))[0]
+                V = QR(V.augment(ker_Vt))[0]
+                S = S.stack(matrix(m - r, r, 0)).augment(matrix(m, n - r, 0))
 
         return U, S, V
 
