@@ -41,6 +41,20 @@ def sort_svd_sage(U, S, V):
 
     return U_new, S_new, V_new
 
+def QR(B, exact=True, digits=None):
+    if exact:
+        Q, R = B._sympy_().QRdecomposition()
+        Q, R = Q._sage_(), R._sage_()
+        return Q, R
+
+    else:
+        Q, R = B.change_ring(CDF).QR()
+
+        if digits is not None:
+            Q = Q.apply_map(lambda x: x.n(digits=digits))
+            R = R.apply_map(lambda x: x.n(digits=digits))
+
+        return Q, R
 
 def SVD(B, exact=True, digits=None, full=True, sort=True):
     if exact:
@@ -77,20 +91,7 @@ def SVD(B, exact=True, digits=None, full=True, sort=True):
 
         return U, S, V
 
-def QR(B, exact=True, digits=None):
-    if exact:
-        Q, R = B._sympy_().QRdecomposition()
-        Q, R = Q._sage_(), R._sage_()
-        return Q, R
 
-    else:
-        Q, R = B.change_ring(CDF).QR()
-
-        if digits is not None:
-            Q = Q.apply_map(lambda x: x.n(digits=digits))
-            R = R.apply_map(lambda x: x.n(digits=digits))
-
-        return Q, R
 
 # multiple independent symbolic equations solving
 def rsolve(eqs, var, *args, **kwargs):
