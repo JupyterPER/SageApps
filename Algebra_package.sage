@@ -11,6 +11,8 @@ eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1,
 
 v = lambda plist: vector(plist)
 
+chop = lambda A, eps=1e-10: A.apply_map(lambda x: 0 if abs(x)<eps else x)
+
 def singularvalues(A, exact=True, digits=None, sort=True):
     if exact:
         s = A._sympy_().singular_values()
