@@ -1,6 +1,6 @@
 # version 5.0
 print("Downloading the package...")
-
+import numpy as np
 
 from sympy.printing import latex as Latex
 from IPython.display import Math 
