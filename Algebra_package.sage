@@ -11,46 +11,29 @@ eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1,
 
 v = lambda plist: vector(plist)
 
+
 def chop(A, eps=1e-10):
-    from sage.categories.real_fields import RealFields
-    from sage.categories.complex_fields import ComplexFields
-    if eps < 0:
-        raise ValueError("eps must be nonnegative")
+    def chop_entry(x):
+        # pokus o komplexné spracovanie
+        try:
+            re = x.real()
+            im = x.imag()
+        except AttributeError:
+            # reálne číslo
+            return 0 if abs(x) < eps else x
+        
+        # prahovanie po zložkách
+        re = 0 if abs(re) < eps else re
+        im = 0 if abs(im) < eps else im
+        
+        # ak je imaginárna časť nulová → vráť reálne číslo
+        if im == 0:
+            return re
+        
+        return re + im * I
+    
+    return A.apply_map(chop_entry)
 
-    R = A.base_ring()
-    n, m = A.nrows(), A.ncols()
-
-    # rýchla cesta pre machine-precision Sage matice
-    if R is RDF:
-        M = np.array(A.tolist(), dtype=float)
-        M[np.abs(M) < eps] = 0.0
-        return matrix(RDF, n, m, M.ravel().tolist())
-
-    if R is CDF:
-        M = np.array(A.tolist(), dtype=complex)
-        M.real[np.abs(M.real) < eps] = 0.0
-        M.imag[np.abs(M.imag) < eps] = 0.0
-        return matrix(CDF, n, m, M.ravel().tolist())
-
-    data = A.list()
-
-    # bez straty presnosti pre ľubovoľné reálne polia
-    if R in RealFields():
-        return matrix(R, n, m, [
-            0 if abs(x) < eps else x
-            for x in data
-        ])
-
-    # bez straty presnosti pre ľubovoľné komplexné polia
-    if R in ComplexFields():
-        i = R.gen()
-        return matrix(R, n, m, [
-            (0 if abs(z.real()) < eps else z.real()) +
-            (0 if abs(z.imag()) < eps else z.imag()) * i
-            for z in data
-        ])
-
-    raise TypeError("chop is intended for numerical real/complex Sage matrices")
 def singularvalues(A, exact=True, digits=None, sort=True):
     if exact:
         s = A._sympy_().singular_values()
