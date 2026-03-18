@@ -11,6 +11,7 @@ eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1,
 
 v = lambda plist: vector(plist)
 
+radical = lambda D: D.apply_map(lambda x: x.radical_expression())
 
 def chop(A, eps=1e-10):
     R = A.base_ring()
