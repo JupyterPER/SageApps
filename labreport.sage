@@ -4,8 +4,8 @@ print("Downloading the package...")
 import numpy as np
 import pandas as pd
 
-# import metrolopy as uc
-# import sigfig as sf
+import metrolopy as uc
+import sigfig as sf
 import sys
 import os
 import tempfile
@@ -84,9 +84,16 @@ def import_github_package(github_repo_url, module_name, branch='master'):
 # repo = "https://github.com/nrc-cnrc/MetroloPy" 
 # module = "MetroloPy"
 # package = import_github_package(repo, module)
-import metrolopy as uc
+#import metrolopy as uc
 
 uc.gummy.style = '+-'
+from functools import wraps
+from sigfig import round as sigfig_round
+
+@wraps(sigfig_round)
+def sfround(*args, **kwargs):
+    kwargs.setdefault("cutoff", 99)
+    return sigfig_round(*args, **kwargs)
 
 def budget(gvel, gnames, form = 'final', notation='', transpose = True):
     indirect = gnames[0]
