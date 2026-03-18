@@ -13,26 +13,14 @@ v = lambda plist: vector(plist)
 
 
 def chop(A, eps=1e-10):
+    R = A.base_ring()
+
     def chop_entry(x):
-        # pokus o komplexné spracovanie
-        try:
-            re = x.real()
-            im = x.imag()
-        except AttributeError:
-            # reálne číslo
-            return 0 if abs(x) < eps else x
-        
-        # prahovanie po zložkách
-        re = 0 if abs(re) < eps else re
-        im = 0 if abs(im) < eps else im
-        
-        # ak je imaginárna časť nulová → vráť reálne číslo
-        if im == 0:
-            return re
-        
-        return re + im * I
-    
-    return A.apply_map(chop_entry)
+        re = 0 if abs(x.real()) < eps else x.real()
+        im = 0 if abs(x.imag()) < eps else x.imag()
+        return re if im == 0 else re + im*I
+
+    return matrix(R, A.nrows(), A.ncols(), map(chop_entry, A.list()))
 
 def singularvalues(A, exact=True, digits=None, sort=True):
     if exact:
