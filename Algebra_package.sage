@@ -12,6 +12,8 @@ eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1,
 v = lambda plist: vector(plist)
 
 def chop(A, eps=1e-10):
+    from sage.categories.real_fields import RealFields
+    from sage.categories.complex_fields import ComplexFields
     if eps < 0:
         raise ValueError("eps must be nonnegative")
 
