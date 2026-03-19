@@ -1,4 +1,4 @@
-# version 5.0
+# version 6.0
 print("Downloading the package...")
 import numpy as np
 
@@ -498,13 +498,54 @@ def der(f,g):
     return result
 
 
+# +------------------------------+
+# |  Show package v5.0           |
+# |  Date: 2026-03-19            |
+# |  Author: Dominik Borovsky    |
+# +------------------------------+
+
+# ----Identifiers-----
+
 def is_function(f):
     if "<class 'sage.symbolic.function_factory.function_factory.<locals>.NewSymbolicFunction'>" == str(type(f.operator())):
         return True
     else:
         return False
+		
+def is_not_composite_function(f):
+    '''
+    Returns True if f is not a composite function
+    '''
+    if f.operands()[0].operator()==None:
+        return True
+    else:
+        return False
+		
+def is_symbolic_function(f):
+    operands = f.operands()
+    free_variables = list(f.free_variables())
+    
+    if operands == free_variables and operands != []:
+        return True
+    else:
+        return False
 
-#################    
+def is_iterable(obj):
+    # Check if it's a standard iterable (but not a string)
+    if hasattr(obj, '__iter__') and not isinstance(obj, str):
+        return True
+    # Check if it supports indexing (like Sage vectors)
+    return hasattr(obj, '__getitem__') and hasattr(obj, '__len__')
+
+def is_derivative(expr):
+    type_expr = str(type(expr.operator()))
+    if type_expr=="<class 'sage.symbolic.operators.FDerivativeOperator'>":
+        return True
+    else:
+        return False
+
+# ----Extractors-----
+
 def opsdiff(df):
     '''
     Returns operand of given derivation df
@@ -513,7 +554,7 @@ def opsdiff(df):
     df_operands = df.operands()
     return df_function(*df_operands)
 
-#################    
+
 def fv_ops(f, output='list'):
     '''
     Returns list:
@@ -530,8 +571,9 @@ def fv_ops(f, output='list'):
     
     If f is function itself, it is included in the list or dictionary with assigned level 0.
     '''
-
-    ops = f.operands()
+    if not hasattr(f, "operands"):
+        return [f]
+    ops = list(f.operands()) + [f]
     ops_lop = {op:1 for op in ops}
     temp_ops_lop = ops_lop
     l = 2
@@ -562,17 +604,7 @@ def fv_ops(f, output='list'):
     elif output=='dict':
         return ops_lop
 
-#################    
-def is_not_composite_function(f):
-    '''
-    Returns True if f is not a composite function
-    '''
-    if f.operands()[0].operator()==None:
-        return True
-    else:
-        return False
 
-#################    
 def only_functions(lexpr):
     '''
     lexpr - list of expressions
@@ -580,63 +612,104 @@ def only_functions(lexpr):
     Returns list of expressions, which are symbolic functions, 
     e.g [f(x,y), f(g(x,y),h(x,y)),...]
     ''' 
-    return [expr for expr in lexpr if is_function(expr)==True]
+    return [expr for expr in lexpr if is_function(expr)]
 
-
-#################    
-def shorts(lf):
+def only_derivatives(lexpr):
     '''
-    lf - list of functions
+    lexpr - list of expressions
+    
+    Returns list of expressions, which are symbolic functions, 
+    e.g [f(x,y), f(g(x,y),h(x,y)),...]
+    ''' 
+    return [expr for expr in lexpr if is_derivative(expr)]
+
+def only_variables_expr(expr):
+    functions_variables = fv_ops(expr)
+    list_functions = only_functions(functions_variables)
+    list_variables = []
+    for fun in list_functions:
+        list_variables += fun.operands()
+    return list(set(list_variables))
+
+
+def only_variables(obj):
+    if is_iterable(obj):
+        list_obj = list(obj)
+        list_variables = []
+        
+        def recurse(item):
+            if is_iterable(item):
+                item = list(item)
+                for sub_item in item:
+                    recurse(sub_item)
+            else:
+                # item is an expression, extract its variables
+                list_variables.extend(only_variables_expr(item))
+        
+        recurse(list_obj)
+        return list(set(list_variables))
+    else:
+        return only_variables_expr(obj)
+
+
+
+# ----Shorteners-----
+
+def shorts_f(lf):
+    shorts = {}
+    shorts_v = {}
+    temp = {}
+
+    for f in lf:
+        for v in f.variables():
+            sv = str(v) + 's'
+            sn = str(v) + '_'
+            temp[sv] = SR.var(sn, latex_name=latex(v))
+            shorts_v[v] = temp[sv]
+
+    for f in lf:
+        fv = str(f.operator()) + 's'
+        fn = str(f.operator()) + '_'
+        temp[fv] = SR.var(fn, latex_name=latex_f(f))
+        shorts[f] = temp[fv]
+        shorts[f.subs(shorts_v)] = temp[fv]
+
+        if not is_not_composite_function(f):
+            f_op_ops = {}
+            for op in f.operands():
+                opv = str(op.operator()) + 's'
+                opn = str(op.operator()) + '_'
+                temp[opv] = SR.var(opn, latex_name=latex(op.operator()))
+                f_op_ops[op] = temp[opv]
+            shorts[f.subs(f_op_ops)] = temp[fv]
+
+    return {**shorts_v, **shorts}
+
+
+def shorts_der(lder):
+    '''
+    lder - list of derivatives
     
     Returns
     '''
     
-    shorts_f = {}
-    shorts_v = {}
+    shorts_der = {}
     
-    # shortcuts for variables
-    for f in lf:
-        f_vars = f.variables()
-        for v in f_vars:
-            sv = str(v)+'s'
-            sn = str(v)+'_'
-            locals()[sv] = var(sn, latex_name=latex(v))
-            shorts_v[v] = locals()[sv]
-    
-    # shortcuts for values of functions
-    for f in lf:
+    for der in lder:
         # temporary variable for shortcut e.g. fs
-        fv = str(f.operator()) + 's'
-        fn = str(f.operator()) + '_'
-        locals()[fv] = var(fn, latex_name=str(f.operator()))
-        # substitution with original viariables e.g. f(x,y,z): fs
-        shorts_f[f] = locals()[fv]
-        # substitution with original shortcut viariables e.g. f(xs,ys,zs): fs
-        shorts_f[f.subs(shorts_v)] = locals()[fv]
-        # substitution with operands as viariable, e.g. for f(g(x,y), h(x,y)) we get item f(gs,hs): fs
-        if not is_not_composite_function(f):
-            f_op = f.operands()
-            f_op_ops = {}
-            for op in f_op:
-                    opv = str(op.operator()) + 's'
-                    opn = str(op.operator()) + '_'
-                    locals()[opv] = var(opn, latex_name=latex(op.operator()))
-                    f_op_ops[op] = locals()[opv]
-            shorts_f[f.subs(f_op_ops)] = locals()[fv]
+        der_idxs = der.operator().parameter_set()
+        ivars = der.operands()
+        list_ivars = [ivars[k] for k in der_idxs]
+        list_ivars_str = [str(ivar).split('(')[0] for ivar in list_ivars]
+        dvar = fv_ops(der)[-1]
+        str_der = 'd'+ str(dvar).split('(')[0] + 'd' + 'd'.join(list_ivars_str)
+        derv = str(str_der) + 's'
+        dern = str(str_der) + '_'
+        locals()[derv] = var(dern, latex_name=nice_derivative_latex(der))
+        shorts_der[der] = locals()[derv]
     
-    return {**shorts_v, **shorts_f}
+    return shorts_der
 
-##############################
-is_symbolic_function = lambda f: True if f.operands()==list(f.free_variables()) and f.operands()!=[] else False
-
-def is_iterable(obj):
-    try:
-        iter(obj)
-        return True
-    except TypeError:
-        return False
-
-################
 def newton_shorts(expr):
     '''
     Returns dictionary:
@@ -654,41 +727,50 @@ def newton_shorts(expr):
     ops = fv_ops(expr)
     
     for op in ops:
-        str_opr = str(op.operator())
         # shorts with dot notation for derivatives of functions
-        if 'D[' in str_opr and op.nops()==1:
+        if is_derivative(op) and op.nops()==1:
             f1 = op.operator().function()
-            locals()[str(f1)+'_'] = var(str(f1))
+            locals()[str(f1)+'s'] = var('_' + str(f1) + '_')
             ndif = len(op.operator().parameter_set())
-            f_latex = latex(locals()[str(f1)+'_']).split(r'\left(')[0]
+            f_latex = latex(only_functions(fv_ops(op))[0]).split(r'\left(')[0]
             dnf = ndif*'d' + str(f1)
-            latex_name = r'\d' + (ndif-1)*'d' + 'ot{' + f_latex + '}'
+            if ndif<4:
+                latex_name = r'\d' + (ndif-1)*'d' + 'ot{' + f_latex + '}'
+            else:
+                latex_name = r'\stackrel{' + str(ndif) + r'}{\dot{' + f_latex + r'}}'
             locals()[dnf] = var(dnf, latex_name=latex_name)
             shorts[op] = locals()[dnf]
-        # functions as variables
-        elif is_function(op):
-            f2 = op.operator()
-            locals()['v' + str(f2)] = var(str(f2))
-            shorts[op] = locals()['v' + str(f2)]
-    
     return shorts
 
-def dot_not(expr, simplify=True):
+
+
+# ----Replacers-----
+
+def dot_not(expr, simplify=False):
     if simplify:
         expr = expr.expand().reduce_trig().canonicalize_radical().expand().reduce_trig()
-    shorts = newton_shorts(expr)
-    return Subs(expr, shorts)
+    shorts_newton = newton_shorts(expr)
+    functions_operands = fv_ops(expr)
+    lf = only_functions(functions_operands)
+    lder = only_derivatives(functions_operands)
+    subs_functions = shorts_f(lf)
+    subs_derivatives = shorts_der(lder)
+    return expr.subs(shorts_newton).subs(subs_derivatives).subs(subs_functions)
 
-#################
-def short_not(expr, simplify=True):
+
+def short_not(expr, simplify=False):
     if simplify:
         expr = expr.expand().reduce_trig().canonicalize_radical().expand().reduce_trig()
-    lf = only_functions(fv_ops(expr))
-    values = shorts(lf)
-    return expr._sympy_().subs(values)
+    functions_operands = fv_ops(expr)
+    lf = only_functions(functions_operands)
+    lder = only_derivatives(functions_operands)
+    subs_functions = shorts_f(lf)
+    subs_derivatives = shorts_der(lder)
+    expr_subs = expr.subs(subs_derivatives).subs(subs_functions)
+    return expr_subs
 
 
-def short_not_nested_list(nested_list, simplify=True):
+def short_not_nested_list(nested_list, simplify=False):
     def recurse(item):
         if is_iterable(item):
             item = list(item)
@@ -699,26 +781,98 @@ def short_not_nested_list(nested_list, simplify=True):
     
     return recurse(nested_list)
 
-def short_not_list(list_terms, simplify=True):
+def short_not_list(list_terms, simplify=False):
     return [short_not(term, simplify=simplify) for term in list_terms]
 
-def short_not_matrix(matr, simplify=True):
-    from sympy import Matrix as SymMatrix
+def short_not_matrix(matr, simplify=False):
     rows_matrix = list(matr)
     short_not_matr = [short_not_list(row,simplify=simplify) for row in rows_matrix]
-    sym_matrix = SymMatrix(short_not_matr)
-    return sym_matrix
+    short_not_matrix = matrix(short_not_matr)
+    return short_not_matrix
 
-def short_not_vector(vec, simplify=True):
-    from sympy import Matrix as SymMatrix
-    n, m = Matrix(vec).dimensions()
+def short_not_vector(vec, simplify=False):
+    n, m = matrix(vec).dimensions()
     if n>m:
-        sym_vector = short_not_matrix(vec, simplify=simplify)
+        vector = short_not_matrix(vec, simplify=simplify)
     else:
-        sym_vector = short_not_matrix([vec], simplify=simplify)
-    return sym_vector
+        vector = short_not_matrix([vec], simplify=simplify)
+    return vector
 
-#################
+
+# ----Displayers-----
+
+latex_f = lambda f: latex(f).split(r'\left(')[0]
+
+def nice_derivative_latex(der):
+    sder = str(der)
+    if 'diff' in sder:
+        # Standard notation
+        der_idxs = der.operator().parameter_set()
+        ivars = der.operands()
+        list_ivars = [ivars[k] for k in der_idxs]
+        dvar = fv_ops(der)[-1]
+        dvar_name = fv_ops(der)[-1].operator()
+        dvar_latex_name = latex_f(dvar)
+        return nice_partial_latex(dvar_latex_name, list_ivars)
+    elif 'D[' in sder:
+        # Euler's D-notation
+        der_idxs = der.operator().parameter_set()
+        ivars = der.operands()
+        list_ivars = [ivars[k] for k in der_idxs]
+        list_ivars_shorts = shorts_f(list_ivars)
+        list_ivars_subs = [latex_f(list_ivars_shorts[k]) for k in list_ivars]
+        dvar = fv_ops(der)[-1]
+        dvar_name = fv_ops(der)[-1].operator()
+        dvar_latex_name = latex_f(dvar)
+        return nice_partial_latex(dvar_latex_name, list_ivars_subs)
+        
+        
+
+def nice_partial_latex(function_name, variables, collect_derivatives=True):
+    """
+    Create LaTeX for mixed partial derivatives.
+    
+    Args:
+        function_name (str): Name of the function (e.g., 'f', 'g', 'theta')
+        variables (list): List of variables in order of differentiation
+                         (e.g., ['x', 'y'] for ∂²f/∂y∂x)
+        collect_derivatives (bool): If True, collect repeated derivatives 
+                                   (e.g., ∂x ∂x → (∂x)²)
+    
+    Returns:
+        str: LaTeX string for the mixed partial derivative
+    """
+    if not variables:
+        return function_name
+    
+    if len(variables) == 1:
+        # Single partial derivative
+        return f"\\dfrac{{\\partial {function_name}}}{{\\partial {variables[0]}}}"
+    
+    # Mixed partial derivative
+    order = len(variables)
+    
+    if collect_derivatives:
+        # Count occurrences of each variable
+        from collections import Counter
+        var_counts = Counter(reversed(variables))
+        
+        # Create denominator parts with collected powers
+        denominator_parts = []
+        for var, count in var_counts.items():
+            if count == 1:
+                denominator_parts.append(f"\\partial {var}")
+            else:
+                denominator_parts.append(f"\\partial {var}^{{{count}}}")
+        
+        denominator = " ".join(denominator_parts)
+    else:
+        # Create the denominator: ∂y ∂x (in reverse order, no collection)
+        denominator_parts = [f"\\partial {var}" for var in reversed(variables)]
+        denominator = " ".join(denominator_parts)
+    
+    return f"\\dfrac{{\\partial^{{{order}}} {function_name}}}{{{denominator}}}"
+
 def replace_total_with_partial_diff(latex_string):
     # Pattern to match total differentials in the form \frac{d}{d g_{}} f_{}
     pattern = r'\\frac{d}{d\s*([a-zA-Z])_{(\{\})?}}'
@@ -731,21 +885,24 @@ def replace_total_with_partial_diff(latex_string):
     # Replace all occurrences
     return re.sub(pattern, replace_func, latex_string)
 
+def replace_partial_with_total_diff(latex_string):
+    new_latex_string = latex_string.replace(r'\partial', 'd')
+    return new_latex_string
+
+
 def showmath_short(expr, partial=True, compact = False, vector_or_matrix=False):
-    latex_code = Latex(expr)
-    if partial:
-        latex_code = replace_total_with_partial_diff(latex_code)
+    latex_code = str(latex(expr))
+    if not partial:
+        latex_code = replace_partial_with_total_diff(latex_code)
     if vector_or_matrix:
         latex_code = latex_code.replace('\\left[','\\left(').replace('\\right]','\\right)')
     if not compact:
-        latex_code = latex_code.replace('\\frac','\\dfrac')
-    # latex_code = '\\displaystyle ' + latex_code 
-    return display(html('$'+latex_code+'$'))
+        latex_code = latex_code.replace(r'\frac', r'\dfrac')
+    return '$'+latex_code+'$'
 
-#################
+# ----Finalizers----
 
-def Show(expr, partial=True, compact=False, simplify=True, notation='leibniz'):
-    if notation=='leibniz':
+def short_not_leibniz(expr, partial=True, compact=False, simplify=False):
         if is_iterable(expr):
             if 'list' in str(type(expr)):
                 return showmath_short(short_not_nested_list(expr, simplify), partial, compact)
@@ -754,8 +911,202 @@ def Show(expr, partial=True, compact=False, simplify=True, notation='leibniz'):
             if 'free_module.FreeModule_ambient_field_with_category' in str(type(expr)):
                 return showmath_short(short_not_vector(expr, simplify), partial, compact, vector_or_matrix=True)
         else:
-            return showmath_short(short_not(expr, simplify), partial, compact)
-    elif notation=='dot':
-        return show(dot_not(expr, simplify))
+            return showmath_short(short_not(expr, simplify), partial, compact,  vector_or_matrix=False)
+
+
+
+def dot_not_list(list_terms, simplify=False):
+    """
+    Apply dot_not() elementwise on a list of expressions.
+    """
+    return [dot_not(term, simplify=simplify) for term in list_terms]
+
+
+def dot_not_nested_list(nested_list, simplify=False):
+    """
+    Recursively apply dot_not() to every element of a nested list.
+    """
+    def recurse(item):
+        if is_iterable(item):
+            item = list(item)
+        if isinstance(item, list):
+            return [recurse(sub_item) for sub_item in item]
+        else:
+            return dot_not(item, simplify=simplify)
+    return recurse(nested_list)
+
+
+def dot_not_matrix(matr, simplify=False):
+    """
+    Apply dot_not() to every element of a matrix.
+    """
+    rows_matrix = list(matr)
+    sub_matr = [dot_not_list(row, simplify=simplify) for row in rows_matrix]
+    return matrix(sub_matr)
+
+
+def dot_not_vector(vec, simplify=False):
+    """
+    Apply dot_not() to a vector (represented as a 1-column or 1-row matrix).
+    """
+    n, m = matrix(vec).dimensions()
+    if n > m:
+        # column vector
+        vector = dot_not_matrix(vec, simplify=simplify)
+    else:
+        # row vector
+        vector = dot_not_matrix([vec], simplify=simplify)
+    return vector
+
+
+def short_not_newton(expr, partial=True, compact=False, simplify=False):
+    """
+    Build a LaTeX display string (dot notation) for scalar, list, matrix or vector.
+    Mirrors short_not_leibniz() structure.
+    """
+    if is_iterable(expr):
+        # handle nested lists
+        if 'list' in str(type(expr)):
+            return showmath_short(
+                dot_not_nested_list(expr, simplify),
+                partial=partial, compact=compact
+            )
+        # handle matrices
+        if 'matrix' in str(type(expr)):
+            return showmath_short(
+                dot_not_matrix(expr, simplify),
+                partial=partial, compact=compact, vector_or_matrix=True
+            )
+        # handle vectors (Sage FreeModule)
+        if 'free_module.FreeModule_ambient_field_with_category' in str(type(expr)):
+            return showmath_short(
+                dot_not_vector(expr, simplify),
+                partial=partial, compact=compact, vector_or_matrix=True
+            )
+    else:
+        # scalar case
+        return showmath_short(dot_not(expr, simplify), partial=partial, compact=compact)
+
+# ----Show function----
+
+def Show(expr, partial=True, compact=False, simplify=False, notation='auto', time_var=None):
+
+    """
+    Display mathematical expressions/lists/vectors/matrices with derivatives in a user-friendly notation.
+    
+    This function formats and displays the given expression (`expr`) using the specified
+    notation (Leibniz, Newton/dot, or auto). It handles automatic selection of notation
+    based on the variables present in the expression.
+    
+    Parameters
+    ----------
+    expr : sage expression
+        The mathematical expression to display.
+    partial : bool, optional
+        If True, use partial derivatives in Leibniz notation. Default is True.
+    compact : bool, optional
+        If True, display the expression in a compact form. Default is False.
+    simplify : bool, optional
+        If True, simplify the expression before display. Default is False.
+    notation : {'auto', 'leibniz', 'dot'}, optional
+        The notation to use for display:
+        - 'leibniz': Use Leibniz notation (∂/∂t).
+        - 'dot': Use Newton's dot notation (˙)
+        - 'auto': Automatically choose notation based on variables
+            - More than one variable: Uses partial Leibniz notation (`∂/∂t`).
+            - Only one variable, not time: Uses non-partial Leibniz notation.
+            - Only one variable, and it is time: Uses Newton's dot notation (`˙`).
+            - Otherwise, uses partial Leibniz notation.
+        Default is 'auto'
+    time_var : str or sage symbol, optional
+        The symbol to use for time. If None, tries to use 't' or a default time variable.
+        Default is None.
+    
+    Returns
+    -------
+    IPython.display.HTML
+        The formatted expression/object as an HTML object, suitable for display in Jupyter notebooks.
+    """
+    
+    if time_var is None:
+        try:
+            time_var = t
+        except NameError:
+            time_var = var('t')
+    if notation == 'auto':
+        l_vars = only_variables(expr)
+        if len(l_vars) > 1:
+            return html(short_not_leibniz(expr, partial=True, compact=compact, simplify=simplify))
+        elif len(l_vars) == 1 and t not in l_vars:
+            return html(short_not_leibniz(expr, partial=False, compact=compact, simplify=simplify))
+        elif len(l_vars) == 1 and t in l_vars:
+            return html(short_not_newton(expr, compact=compact, simplify=simplify))
+        else:
+            return html(short_not_leibniz(expr, partial=partial, compact=compact, simplify=simplify))
+
+    elif notation == 'leibniz':
+        return html(short_not_leibniz(expr, partial=partial, compact=compact, simplify=simplify))
+
+    elif notation == 'dot':
+        return html(short_not_newton(expr, partial=partial, compact=compact, simplify=simplify))
+
+def Show_latex(expr, partial=True, compact=False, simplify=False, notation='auto', time_var=None):
+    """
+    Returns LaTeX of mathematical expressions/lists/vectors/matrices with derivatives in a user-friendly notation.
+    
+    This function formats the given expression (`expr`) using the specified
+    notation (Leibniz, Newton/dot, or auto). It handles automatic selection of notation
+    based on the variables present in the expression.
+    
+    Parameters
+    ----------
+    expr : sage expression
+        The mathematical expression to display.
+    partial : bool, optional
+        If True, use partial derivatives in Leibniz notation. Default is True.
+    compact : bool, optional
+        If True, display the expression in a compact form. Default is False.
+    simplify : bool, optional
+        If True, simplify the expression before display. Default is False.
+    notation : {'auto', 'leibniz', 'dot'}, optional
+        The notation to use for display:
+        - 'leibniz': Use Leibniz notation (∂/∂t).
+        - 'dot': Use Newton's dot notation (˙)
+        - 'auto': Automatically choose notation based on variables
+            - More than one variable: Uses partial Leibniz notation (`∂/∂t`).
+            - Only one variable, not time: Uses non-partial Leibniz notation.
+            - Only one variable, and it is time: Uses Newton's dot notation (`˙`).
+            - Otherwise, uses partial Leibniz notation.
+        Default is 'auto'
+    time_var : str or sage symbol, optional
+        The symbol to use for time. If None, tries to use 't' or a default time variable.
+        Default is None.
+    
+    Returns
+    -------
+    The formatted LaTeX of an expression/object.
+    """
+    if time_var is None:
+        try:
+            time_var = t
+        except NameError:
+            time_var = var('t')
+    if notation == 'auto':
+        l_vars = only_variables(expr)
+        if len(l_vars) > 1:
+            print(short_not_leibniz(expr, partial=True, compact=compact, simplify=simplify))
+        elif len(l_vars) == 1 and t not in l_vars:
+            print(short_not_leibniz(expr, partial=False, compact=compact, simplify=simplify))
+        elif len(l_vars) == 1 and t in l_vars:
+            print(short_not_newton(expr, compact=compact, simplify=simplify))
+        else:
+            print(short_not_leibniz(expr, partial=partial, compact=compact, simplify=simplify))
+
+    elif notation == 'leibniz':
+        print(short_not_leibniz(expr, partial=partial, compact=compact, simplify=simplify))
+
+    elif notation == 'dot':
+        print(short_not_newton(expr, partial=partial, compact=compact, simplify=simplify))
+
         
 print('The package was successfully loaded!!!')  
