@@ -40,24 +40,31 @@ from functools import wraps
 
 @wraps(sage_matrix)
 def matrix(*args, **kwargs):
-    if not kwargs and len(args) == 4 and args[0] == SR and isinstance(args[3], str):
+    if len(args) == 4 and args[0] == SR and isinstance(args[3], str):
         _, m, n, name = args
 
         try:
             m = int(m)
             n = int(n)
         except Exception:
-            raise TypeError("In matrix(SR, m, n, name), m and n must be integers.")
+            raise TypeError("In matrix(SR, m, n, name, ...), m and n must be integers.")
 
         if m < 0 or n < 0:
-            raise ValueError("In matrix(SR, m, n, name), require m >= 0 and n >= 0.")
+            raise ValueError("In matrix(SR, m, n, name, ...), require m >= 0 and n >= 0.")
 
-        return sage_matrix(m, n, lambda i, j: var(f"{name}{i}{j}"))
+        base_latex = kwargs.pop('latex_name', None)
+
+        def make_var(i, j):
+            if base_latex is None:
+                return var(f"{name}{i}{j}", **kwargs)
+            return var(f"{name}{i}{j}", latex_name=f"{base_latex}_{{{i}{j}}}", **kwargs)
+
+        return sage_matrix(m, n, lambda i, j: make_var(i, j))
 
     return sage_matrix(*args, **kwargs)
 
 
-matrix.__doc__ = (matrix.__doc__ or "") + """
+matrix.__doc__ = (matrix.__doc__ or "") + r"""
 
 Extension:
     If called as matrix(SR, m, n, name) with name a string, it creates
@@ -67,6 +74,7 @@ Parameters for the extension:
     name (str): Base name for the variables.
     m (int): Number of rows.
     n (int): Number of columns.
+    **kwargs: Passed to var(...), e.g. domain='real', latex_name=r'\alpha'.
 
 Returns for the extension:
     matrix: An m x n symbolic matrix with entries name{i}{j}.
@@ -75,29 +83,39 @@ Example:
     matrix(SR, m, n, 'a') returns the symbolic matrix
     [a00 a01 ...;
      a10 a11 ...;
-     ...     amn].
+     ...         ].
+
+    matrix(SR, m, n, 'a', latex_name=r'\alpha') uses LaTeX names
+    \alpha_{00}, \alpha_{01}, ...
 """
 
 
 @wraps(sage_vector)
 def vector(*args, **kwargs):
-    if not kwargs and len(args) == 3 and args[0] == SR and isinstance(args[2], str):
+    if len(args) == 3 and args[0] == SR and isinstance(args[2], str):
         _, n, name = args
 
         try:
             n = int(n)
         except Exception:
-            raise TypeError("In vector(SR, n, name), n must be an integer.")
+            raise TypeError("In vector(SR, n, name, ...), n must be an integer.")
 
         if n < 0:
-            raise ValueError("In vector(SR, n, name), require n >= 0.")
+            raise ValueError("In vector(SR, n, name, ...), require n >= 0.")
 
-        return sage_vector([var(f"{name}{i}") for i in range(n)])
+        base_latex = kwargs.pop('latex_name', None)
+
+        def make_var(i):
+            if base_latex is None:
+                return var(f"{name}{i}", **kwargs)
+            return var(f"{name}{i}", latex_name=f"{base_latex}_{{{i}}}", **kwargs)
+
+        return sage_vector([make_var(i) for i in range(n)])
 
     return sage_vector(*args, **kwargs)
 
 
-vector.__doc__ = (vector.__doc__ or "") + """
+vector.__doc__ = (vector.__doc__ or "") + r"""
 
 Extension:
     If called as vector(SR, n, name) with name a string, it creates
@@ -106,15 +124,18 @@ Extension:
 Parameters for the extension:
     name (str): Base name for the variables.
     n (int): Length of the vector.
+    **kwargs: Passed to var(...), e.g. domain='real', latex_name=r'\alpha'.
 
 Returns for the extension:
     vector: A symbolic vector with entries name0, name1, ..., name(n-1).
 
 Example:
-    vector(SR, n, 'v') returns the symbolic vector
-    (v0, v1, ..., vn-1).
-"""
+    vector(SR, n, 'a') returns the symbolic vector
+    (a0, a1, ..., a(n-1)).
 
+    vector(SR, n, 'a', latex_name=r'\alpha') uses LaTeX names
+    \alpha_0, \alpha_1, ...
+"""
 def chop(A, eps=1e-10):
     R = A.base_ring()
 
