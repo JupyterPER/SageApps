@@ -13,6 +13,70 @@ v = lambda plist: vector(plist)
 
 radical = lambda D: D.apply_map(lambda x: x.radical_expression())
 
+def smatrix(name, m, n=1):
+    """
+    Create a symbolic vector or matrix with indexed variable names.
+    
+    Parameters:
+        name (str): Base name for the variables (e.g., 'v' gives v0, v1, ...)
+        m (int): Number of rows (for matrix) or length (for vector)
+        n (int, optional): Number of columns. Default is 1 (creates a vector).
+        ring: The ring for the matrix/vector elements. Default is SR (Symbolic Ring).
+    
+    Returns:
+        vector: If n == 1, returns a vector of length m with elements name0, name1, ...
+        matrix: Otherwise, returns an m×n matrix with elements name{i}{j}
+    """
+    # Create a symbolic vector when n == 1
+    if n == 1:
+        return vector(SR, [var(f"{name}{i}") for i in range(m)])
+    
+    # Create a symbolic m×n matrix with indexed entries
+    return matrix(SR, m, n, lambda i, j: var(f"{name}{i}{j}"))
+
+
+from sage.all import matrix as sage_matrix, vector, SR, var
+from functools import wraps
+
+@wraps(sage_matrix)
+def matrix(*args, **kwargs):
+    if not kwargs and len(args) == 4 and args[0] == SR and isinstance(args[3], str):
+        _, m, n, name = args
+
+        try:
+            m = int(m)
+            n = int(n)
+        except Exception:
+            raise TypeError("In matrix(SR, m, n, name), m and n must be integers.")
+
+        if m < 0 or n < 1:
+            raise ValueError("In matrix(SR, m, n, name), require m >= 0 and n >= 1.")
+
+        if n == 1:
+            return vector([var(f"{name}{i}") for i in range(m)])
+
+        return sage_matrix(m, n, lambda i, j: var(f"{name}{i}{j}"))
+
+    return sage_matrix(*args, **kwargs)
+
+matrix.__doc__ = (matrix.__doc__ or "") + """
+
+Extension:
+    If called as matrix(SR, m, n, name), it creates a symbolic vector or matrix
+    with indexed variable names.
+
+Parameters for the extension:
+    name (str): Base name for the variables.
+    m (int): Number of rows, or vector length if n == 1.
+    n (int): Number of columns. If n == 1, a vector is returned.
+
+Returns for the extension:
+    vector: If n == 1, returns (name0, name1, ..., name(m-1)).
+    matrix: Otherwise, returns an m x n symbolic matrix with entries name{i}{j}.
+"""
+
+
+
 def chop(A, eps=1e-10):
     R = A.base_ring()
 
