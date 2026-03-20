@@ -35,7 +35,7 @@ def smatrix(name, m, n=1):
     return matrix(SR, m, n, lambda i, j: var(f"{name}{i}{j}"))
 
 
-from sage.all import matrix as sage_matrix, vector as sage_vector
+from sage.all import matrix as sage_matrix, vector as sage_vector, SR, var
 from functools import wraps
 
 @wraps(sage_matrix)
@@ -52,12 +52,22 @@ def matrix(*args, **kwargs):
         if m < 0 or n < 0:
             raise ValueError("In matrix(SR, m, n, name, ...), require m >= 0 and n >= 0.")
 
+        indexing = kwargs.pop('indexing', 'natural')
+        if indexing not in ('python', 'natural'):
+            raise ValueError("indexing must be 'python' or 'natural'.")
+
+        shift = 0 if indexing == 'python' else 1
         base_latex = kwargs.pop('latex_name', None)
 
         def make_var(i, j):
+            ii, jj = i + shift, j + shift
             if base_latex is None:
-                return var(f"{name}{i}{j}", **kwargs)
-            return var(f"{name}{i}{j}", latex_name=f"{base_latex}_{{{i}{j}}}", **kwargs)
+                return var(f"{name}{ii}{jj}", **kwargs)
+            return var(
+                f"{name}{ii}{jj}",
+                latex_name=f"{base_latex}_{{{ii}{jj}}}",
+                **kwargs
+            )
 
         return sage_matrix(m, n, lambda i, j: make_var(i, j))
 
@@ -74,6 +84,8 @@ Parameters for the extension:
     name (str): Base name for the variables.
     m (int): Number of rows.
     n (int): Number of columns.
+    indexing (str, optional): 'natural' for indexing from 1, or
+        'python' for indexing from 0. Default is 'natural'.
     **kwargs: Passed to var(...), e.g. domain='real', latex_name=r'\alpha'.
 
 Returns for the extension:
@@ -81,12 +93,17 @@ Returns for the extension:
 
 Example:
     matrix(SR, m, n, 'a') returns the symbolic matrix
+    [a11 a12 ...;
+     a21 a22 ...;
+     ...         ].
+
+    matrix(SR, m, n, 'a', indexing='python') returns
     [a00 a01 ...;
      a10 a11 ...;
      ...         ].
 
     matrix(SR, m, n, 'a', latex_name=r'\alpha') uses LaTeX names
-    \alpha_{00}, \alpha_{01}, ...
+    \alpha_{11}, \alpha_{12}, ...
 """
 
 
@@ -103,12 +120,22 @@ def vector(*args, **kwargs):
         if n < 0:
             raise ValueError("In vector(SR, n, name, ...), require n >= 0.")
 
+        indexing = kwargs.pop('indexing', 'natural')
+        if indexing not in ('python', 'natural'):
+            raise ValueError("indexing must be 'python' or 'natural'.")
+
+        shift = 0 if indexing == 'python' else 1
         base_latex = kwargs.pop('latex_name', None)
 
         def make_var(i):
+            ii = i + shift
             if base_latex is None:
-                return var(f"{name}{i}", **kwargs)
-            return var(f"{name}{i}", latex_name=f"{base_latex}_{{{i}}}", **kwargs)
+                return var(f"{name}{ii}", **kwargs)
+            return var(
+                f"{name}{ii}",
+                latex_name=f"{base_latex}_{{{ii}}}",
+                **kwargs
+            )
 
         return sage_vector([make_var(i) for i in range(n)])
 
@@ -124,18 +151,25 @@ Extension:
 Parameters for the extension:
     name (str): Base name for the variables.
     n (int): Length of the vector.
+    indexing (str, optional): 'natural' for indexing from 1, or
+        'python' for indexing from 0. Default is 'natural'.
     **kwargs: Passed to var(...), e.g. domain='real', latex_name=r'\alpha'.
 
 Returns for the extension:
-    vector: A symbolic vector with entries name0, name1, ..., name(n-1).
+    vector: A symbolic vector with entries name1, name2, ..., namen,
+    or name0, name1, ..., name(n-1) if indexing='python'.
 
 Example:
     vector(SR, n, 'a') returns the symbolic vector
+    (a1, a2, ..., an).
+
+    vector(SR, n, 'a', indexing='python') returns
     (a0, a1, ..., a(n-1)).
 
     vector(SR, n, 'a', latex_name=r'\alpha') uses LaTeX names
-    \alpha_0, \alpha_1, ...
+    \alpha_1, \alpha_2, ...
 """
+
 def chop(A, eps=1e-10):
     R = A.base_ring()
 
