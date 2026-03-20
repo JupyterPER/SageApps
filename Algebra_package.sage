@@ -35,7 +35,7 @@ def smatrix(name, m, n=1):
     return matrix(SR, m, n, lambda i, j: var(f"{name}{i}{j}"))
 
 
-from sage.all import matrix as sage_matrix, vector, SR, var
+from sage.all import matrix as sage_matrix, vector as sage_vector
 from functools import wraps
 
 @wraps(sage_matrix)
@@ -49,33 +49,71 @@ def matrix(*args, **kwargs):
         except Exception:
             raise TypeError("In matrix(SR, m, n, name), m and n must be integers.")
 
-        if m < 0 or n < 1:
-            raise ValueError("In matrix(SR, m, n, name), require m >= 0 and n >= 1.")
-
-        if n == 1:
-            return vector([var(f"{name}{i}") for i in range(m)])
+        if m < 0 or n < 0:
+            raise ValueError("In matrix(SR, m, n, name), require m >= 0 and n >= 0.")
 
         return sage_matrix(m, n, lambda i, j: var(f"{name}{i}{j}"))
 
     return sage_matrix(*args, **kwargs)
 
+
 matrix.__doc__ = (matrix.__doc__ or "") + """
 
 Extension:
-    If called as matrix(SR, m, n, name), it creates a symbolic vector or matrix
-    with indexed variable names.
+    If called as matrix(SR, m, n, name) with name a string, it creates
+    an m x n symbolic matrix with indexed variable names.
 
 Parameters for the extension:
     name (str): Base name for the variables.
-    m (int): Number of rows, or vector length if n == 1.
-    n (int): Number of columns. If n == 1, a vector is returned.
+    m (int): Number of rows.
+    n (int): Number of columns.
 
 Returns for the extension:
-    vector: If n == 1, returns (name0, name1, ..., name(m-1)).
-    matrix: Otherwise, returns an m x n symbolic matrix with entries name{i}{j}.
+    matrix: An m x n symbolic matrix with entries name{i}{j}.
+
+Example:
+    matrix(SR, m, n, 'a') returns the symbolic matrix
+    [a00 a01 ...;
+     a10 a11 ...;
+     ...     amn].
 """
 
 
+@wraps(sage_vector)
+def vector(*args, **kwargs):
+    if not kwargs and len(args) == 3 and args[0] == SR and isinstance(args[2], str):
+        _, n, name = args
+
+        try:
+            n = int(n)
+        except Exception:
+            raise TypeError("In vector(SR, n, name), n must be an integer.")
+
+        if n < 0:
+            raise ValueError("In vector(SR, n, name), require n >= 0.")
+
+        return sage_vector([var(f"{name}{i}") for i in range(n)])
+
+    return sage_vector(*args, **kwargs)
+
+
+vector.__doc__ = (vector.__doc__ or "") + """
+
+Extension:
+    If called as vector(SR, n, name) with name a string, it creates
+    a symbolic vector with indexed variable names.
+
+Parameters for the extension:
+    name (str): Base name for the variables.
+    n (int): Length of the vector.
+
+Returns for the extension:
+    vector: A symbolic vector with entries name0, name1, ..., name(n-1).
+
+Example:
+    vector(SR, n, 'v') returns the symbolic vector
+    (v0, v1, ..., vn-1).
+"""
 
 def chop(A, eps=1e-10):
     R = A.base_ring()
