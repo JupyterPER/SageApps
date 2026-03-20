@@ -52,7 +52,7 @@ def matrix(*args, **kwargs):
         if m < 0 or n < 0:
             raise ValueError("In matrix(SR, m, n, name, ...), require m >= 0 and n >= 0.")
 
-        indexing = kwargs.pop('indexing', 'natural')
+        indexing = kwargs.pop('indexing', 'python')
         if indexing not in ('python', 'natural'):
             raise ValueError("indexing must be 'python' or 'natural'.")
 
@@ -120,7 +120,7 @@ def vector(*args, **kwargs):
         if n < 0:
             raise ValueError("In vector(SR, n, name, ...), require n >= 0.")
 
-        indexing = kwargs.pop('indexing', 'natural')
+        indexing = kwargs.pop('indexing', 'python')
         if indexing not in ('python', 'natural'):
             raise ValueError("indexing must be 'python' or 'natural'.")
 
