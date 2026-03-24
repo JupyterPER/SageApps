@@ -516,16 +516,16 @@ def separate_SchE(SchE, psi, phi, T):
     sep = separate(SchE.subs(Hpsi == psi.diff(x)), psi, phi, T)
     return sep.subs(phix == Hphi)
 
-def showURL(url, ht=424):
+def showURL(url, ht=550):
 
     '''shortcut for IFrame displaying various media at given url address;
        for interactive SageMath worksheets it is appropriate height 424 and width 100%
     '''
-    from IPython.display import IFrame
-    return IFrame(url, width='100%', height=ht)
+    from sage.misc.html import html
+    return pretty_print(html.iframe(url, width='100%', height=ht))
 
 
-def showGeo(url, ht=424):
+def showGeo(url, ht=550):
     """
     Generates an iframe URL for a GeoGebra applet with specified display settings.
 
@@ -539,7 +539,7 @@ def showGeo(url, ht=424):
     IFrame: An IFrame object that embeds the GeoGebra applet with 'Reset' and 'Fullscreen' icons.
     """
 
-    from IPython.display import IFrame
+    from sage.misc.html import html
     # Extract the id from the given URL
     applet_id = url.split('/')[-1]
     
@@ -551,7 +551,7 @@ def showGeo(url, ht=424):
     )
     
     # Return the IFrame object for embedding
-    return IFrame(transformed_url, width='100%', height=ht)
+    return pretty_print(html.iframe(transformed_url, width='100%', height=ht))
 
 def set_simp(spec="ctf"):
     """
