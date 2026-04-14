@@ -217,26 +217,23 @@ def sort_svd_sage(U, S, V):
 
     return U_new, S_new, V_new
 
-def QR(B, exact=True, digits=None):
-    if exact:
+def QR(B, digits=None):
+    if digits is None:
         Q, R = B._sympy_().QRdecomposition()
         Q, R = Q._sage_(), R._sage_()
         return Q, R
 
     else:
         Q, R = B.change_ring(CDF).QR()
-
-        if digits is not None:
-            Q = Q.apply_map(lambda x: x.n(digits=digits))
-            R = R.apply_map(lambda x: x.n(digits=digits))
-
+        Q = Q.apply_map(lambda x: x.n(digits=digits))
+        R = R.apply_map(lambda x: x.n(digits=digits))
         return Q, R
 
-def SVD(B, exact=True, digits=None, full=True, sort=True):
+def SVD(B, digits=None, full=True, sort=True):
 
     m, n = B.dimensions()
 
-    if exact:
+    if digits is None:
         U, S, V = B._sympy_().singular_value_decomposition()
         U, S, V = U._sage_(), S._sage_(), V._sage_()
 
@@ -266,10 +263,9 @@ def SVD(B, exact=True, digits=None, full=True, sort=True):
     else:
         U, S, V = B.change_ring(CDF).SVD()
 
-        if digits is not None:
-            U = U.apply_map(lambda x: x.n(digits=digits))
-            S = S.apply_map(lambda x: x.n(digits=digits))
-            V = V.apply_map(lambda x: x.n(digits=digits))
+        U = U.apply_map(lambda x: x.n(digits=digits))
+        S = S.apply_map(lambda x: x.n(digits=digits))
+        V = V.apply_map(lambda x: x.n(digits=digits))
 
         return U, S, V
 
