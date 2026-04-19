@@ -18,6 +18,14 @@ v = lambda plist: vector(plist)
 
 radical = lambda D: D.apply_map(lambda x: x.radical_expression())
 
+def enorm(v):
+    # Convert input to a matrix to ensure .T exists
+    M = matrix(v)
+    # For a row vector v, M.T * M gives a square matrix 
+    # For a column vector v, M * M.T gives the square of the norm in the trace
+    # However, to be mathematically consistent with complex matrices and vector:
+    return (M.H * M).trace().sqrt()
+
 def smatrix(name, m, n=1):
     """
     Create a symbolic vector or matrix with indexed variable names.
