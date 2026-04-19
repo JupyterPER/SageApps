@@ -18,7 +18,7 @@ v = lambda plist: vector(plist)
 
 radical = lambda D: D.apply_map(lambda x: x.radical_expression())
 
-def enorm(v):
+def Norm(v):
     # Convert input to a matrix to ensure .T exists
     M = matrix(v)
     # For a row vector v, M.T * M gives a square matrix 
