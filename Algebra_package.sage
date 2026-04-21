@@ -55,16 +55,22 @@ from functools import wraps
 #    # However, to be mathematically consistent with complex matrices and vector:
 #    return (M.H * M).trace().sqrt()
 
+from functools import wraps
+from sage.misc.functional import norm as sage_norm
+
 @wraps(sage_norm)
-def norm(*args, **kwargs):
-    if len(args) != 1:
-        raise TypeError("norm takes exactly one positional argument")
+def norm(x, p=None):
+    """
+    Extended Sage norm.
 
-    x = args[0]
-    p = kwargs.pop('p', None)
-
-    if kwargs:
-        raise TypeError(f"unexpected keyword arguments: {list(kwargs.keys())}")
+    Behavior:
+    - norm(x): preserve Sage default behavior, except for 1xn or nx1 matrices,
+      where return the exact Frobenius/Euclidean norm.
+    - norm(x, p='frob'): for any matrix, return the exact Frobenius norm.
+    - norm(x, p=1), norm(x, p=2), norm(x, p=oo), norm(x, p=Infinity):
+      for matrices, delegate to x.norm(p).
+    - for non-matrices, delegate to Sage's original norm(x).
+    """
 
     is_matrix = (
         hasattr(x, 'nrows') and
@@ -72,15 +78,28 @@ def norm(*args, **kwargs):
         hasattr(x, 'H')
     )
 
+    if not is_matrix:
+        if p is None:
+            return sage_norm(x)
+        try:
+            return x.norm(p)
+        except Exception:
+            raise TypeError("parameter p is not supported for this object")
+
+    # x is a matrix
+    is_vector_shaped_matrix = (x.nrows() == 1 or x.ncols() == 1)
+
+    # Default call norm(x)
     if p is None:
+        if is_vector_shaped_matrix:
+            return ((x.H * x).trace()).sqrt()
         return sage_norm(x)
 
-    if not is_matrix:
-        raise TypeError("extended parameter p is only supported for matrices")
-
+    # Exact Frobenius for matrices
     if p == 'frob':
         return ((x.H * x).trace()).sqrt()
 
+    # Usual Sage matrix norms
     if p in (1, 2, oo, Infinity):
         return x.norm(p)
 
