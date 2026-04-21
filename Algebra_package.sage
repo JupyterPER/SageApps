@@ -18,13 +18,7 @@ v = lambda plist: vector(plist)
 
 radical = lambda D: D.apply_map(lambda x: x.radical_expression())
 
-def Norm(v):
-    # Convert input to a matrix to ensure .T exists
-    M = matrix(v)
-    # For a row vector v, M.T * M gives a square matrix 
-    # For a column vector v, M * M.T gives the square of the norm in the trace
-    # However, to be mathematically consistent with complex matrices and vector:
-    return (M.H * M).trace().sqrt()
+
 
 def smatrix(name, m, n=1):
     """
@@ -49,7 +43,37 @@ def smatrix(name, m, n=1):
 
 
 from sage.all import matrix as sage_matrix, vector as sage_vector, SR, var
+from sage.misc.functional import norm as sage_norm
+
 from functools import wraps
+
+#def Norm(v):
+#    # Convert input to a matrix to ensure .T exists
+#    M = matrix(v)
+#    # For a row vector v, M.T * M gives a square matrix 
+#    # For a column vector v, M * M.T gives the square of the norm in the trace
+#    # However, to be mathematically consistent with complex matrices and vector:
+#    return (M.H * M).trace().sqrt()
+
+@wraps(sage_norm)
+def norm(*args, **kwargs):
+    """
+    Extended Sage norm.
+
+    For a matrix M called as norm(M), returns the exact Frobenius/L2 norm
+        sqrt(trace(M.H * M)).
+    Otherwise, delegates to Sage's original norm.
+    """
+    if len(args) == 1 and not kwargs:
+        x = args[0]
+        if (
+            hasattr(x, 'nrows') and
+            hasattr(x, 'ncols') and
+            hasattr(x, 'H')
+        ):
+            return ((x.H * x).trace()).sqrt()
+
+    return sage_norm(*args, **kwargs)
 
 @wraps(sage_matrix)
 def matrix(*args, **kwargs):
