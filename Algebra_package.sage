@@ -57,23 +57,34 @@ from functools import wraps
 
 @wraps(sage_norm)
 def norm(*args, **kwargs):
-    """
-    Extended Sage norm.
+    if len(args) != 1:
+        raise TypeError("norm takes exactly one positional argument")
 
-    For a matrix M called as norm(M), returns the exact Frobenius/L2 norm
-        sqrt(trace(M.H * M)).
-    Otherwise, delegates to Sage's original norm.
-    """
-    if len(args) == 1 and not kwargs:
-        x = args[0]
-        if (
-            hasattr(x, 'nrows') and
-            hasattr(x, 'ncols') and
-            hasattr(x, 'H')
-        ):
-            return ((x.H * x).trace()).sqrt()
+    x = args[0]
+    p = kwargs.pop('p', None)
 
-    return sage_norm(*args, **kwargs)
+    if kwargs:
+        raise TypeError(f"unexpected keyword arguments: {list(kwargs.keys())}")
+
+    is_matrix = (
+        hasattr(x, 'nrows') and
+        hasattr(x, 'ncols') and
+        hasattr(x, 'H')
+    )
+
+    if p is None:
+        return sage_norm(x)
+
+    if not is_matrix:
+        raise TypeError("extended parameter p is only supported for matrices")
+
+    if p == 'frob':
+        return ((x.H * x).trace()).sqrt()
+
+    if p in (1, 2, oo, Infinity):
+        return x.norm(p)
+
+    raise ValueError("for matrices, p must be one of 1, 2, oo, Infinity, 'frob'")
 
 @wraps(sage_matrix)
 def matrix(*args, **kwargs):
