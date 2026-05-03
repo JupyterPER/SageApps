@@ -22,7 +22,6 @@ from IPython.display import YouTubeVideo
 from numpy import array as v
 sv = lambda zoznam: vector(zoznam)
 from numpy import float64 as dc
-from numpy import sqrt
 from scipy.stats import sem as stsem
 from numpy import mean as npmean
 from numpy import std as npstd
