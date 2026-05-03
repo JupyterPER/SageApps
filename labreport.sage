@@ -208,6 +208,8 @@ def read_google_table(url):
         URL = url.replace('edit#', 'export?format=csv&')
     elif 'edit?' in url:
         URL = url.replace('edit?', 'export?format=csv&')
+    elif 'preview?' in url:
+        URL = url.replace('preview?', 'export?format=csv&')
     elif 'preview#' in url:
         URL = url.replace('preview#', 'export?format=csv&')
     elif 'edit?usp=sharing' in url:
