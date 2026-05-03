@@ -187,6 +187,7 @@ def read_google_table(url):
     - url (str): The URL of the Google Sheets document.
                  The URL should be in one of the following formats:
                  - 'https://docs.google.com/spreadsheets/d/{id}/edit#gid={gid}' (copied from address bar, document must be in a publicly accessible folder)
+                 - 'https://docs.google.com/spreadsheets/d/{id}/edit?gid={gid}...' (copied from address bar, document must be in a publicly accessible folder)
                  - 'https://docs.google.com/spreadsheets/d/{id}/preview#gid={gid}'
                  - 'https://docs.google.com/spreadsheets/d/{id}/edit?usp=sharing' (obtained through the Share option)
 
@@ -205,6 +206,8 @@ def read_google_table(url):
     """
     if 'edit#' in url:
         URL = url.replace('edit#', 'export?format=csv&')
+    elif 'edit?' in url:
+        URL = url.replace('edit?', 'export?format=csv&')
     elif 'preview#' in url:
         URL = url.replace('preview#', 'export?format=csv&')
     elif 'edit?usp=sharing' in url:
