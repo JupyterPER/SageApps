@@ -19,6 +19,12 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)  # Also helpful for some packages
 warnings.filterwarnings("ignore", category=SyntaxWarning)  # Do not show No syntax problems
 
+def np_zip(list1, list2):
+    return np.column_stack((list1, list2))
+
+def sum_of_squares(arr1, arr2):
+    return np.sum(np.square(np.ravel(arr1) - np.ravel(arr2)))
+
 from IPython.display import YouTubeVideo
 from numpy import array as v
 sv = lambda zoznam: vector(zoznam)
