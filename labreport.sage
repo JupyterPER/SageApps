@@ -232,7 +232,9 @@ def read_google_table(url):
 # Explicit symbolic models and first-order ODE models
 # Always return full result dictionary
 # Automatically print available dictionary keys
-# Includes approximate confidence bands for ODE fits
+# Includes approximate confidence and prediction bands for ODE fits
+# The ODE model information is stored inside fit["model_info"],
+# so bands can be computed simply by ode_confidence_band(fit).
 # ============================================================
 
 import lmfit
@@ -288,7 +290,6 @@ def _add_lmfit_parameter(params, var_varfit, par_data):
     if len(par_data) == 5:
         par_init = float(par_data[3])
     else:
-        # Automatic initial value if not supplied
         if np.isfinite(par_min) and np.isfinite(par_max):
             par_init = (par_min + par_max) / 2
         elif np.isfinite(par_min):
@@ -351,9 +352,6 @@ def _collect_lmfit_output(estim, var_varfit, data):
     Therefore
 
         best_fit = data_values + residual
-
-    This follows the naming convention of lmfit.ModelResult,
-    where fitted model values are stored as best_fit.
     """
     t_values = np.array(data[:, 0], dtype=float).flatten()
     y_data = np.array(data[:, 1], dtype=float).flatten()
@@ -408,7 +406,7 @@ def _collect_lmfit_output(estim, var_varfit, data):
             "init_value": par.init_value
         }
 
-    # Varying parameters in the order used by lmfit covariance matrix
+    # Varying parameters in the covariance-matrix order used by lmfit
     varying_lmfit_names = list(getattr(estim, "var_names", []))
 
     if len(varying_lmfit_names) == 0:
@@ -456,7 +454,7 @@ def _collect_lmfit_output(estim, var_varfit, data):
         "aic": estim.aic,
         "bic": estim.bic,
 
-        # Covariance matrix, if available
+        # Covariance matrix
         "covar": estim.covar,
 
         # Report and raw object
@@ -482,41 +480,7 @@ def lmfit_fun(f, data, *params_data):
     """
     Fit an explicit one-variable symbolic function.
 
-    Always returns a dictionary with keys:
-
-        "params"
-        "stderr"
-        "relative_stderr_percent"
-        "param_summary"
-        "varying_params"
-        "varying_lmfit_names"
-        "best_fit"
-        "fit_values"
-        "residuals"
-        "chisqr"
-        "redchi"
-        "residual_standard_error"
-        "aic"
-        "bic"
-        "covar"
-        "report"
-        "raw"
-        "t"
-        "y_data"
-        "data_fit"
-        "data_residuals"
-
-    Parameter tuples have the form
-
-        (param, min_val, max_val, init_val, vary)
-
-    or
-
-        (param, min_val, max_val, vary)
-
-    Convention
-    ----------
-    residual = model - data
+    Always returns a dictionary.
     """
     data = np.array(data, dtype=float)
 
@@ -556,9 +520,6 @@ def refined_times_from_data(data_times, n=1):
 
     If n > 1:
         insert n-1 intermediate points between consecutive data times.
-
-    This allows the ODE solver to compute on a finer time grid,
-    while the fit is still compared only at the original measured times.
     """
     data_times = [float(t) for t in data_times]
 
@@ -589,36 +550,20 @@ def fit_model_1ode(model, dvars, ivar, ics, n, data, params, var_varfit):
     """
     Evaluate a system of first-order ODEs after substituting fitted parameters.
 
-    Examples
-    --------
-
-    One ODE:
-
-        dv/dt = g
+    One ODE example:
 
         model = [g]
         dvars = [v]
         ics = [v0]
 
-    System of ODEs:
-
-        dy/dt = v
-        dv/dt = -g
+    System example:
 
         model = [v, -g]
         dvars = [y, v]
         ics = [y0, v0]
 
-    Important
-    ---------
     For one-dimensional ODEs this function internally adds a hidden
-    dummy equation. Students can still write the natural model:
-
-        model = [g]
-        dvars = [v]
-        ics = [v0]
-
-    The dummy variable is only an implementation detail.
+    dummy equation. Students can still write the natural model.
     """
     data = np.array(data, dtype=float)
 
@@ -656,7 +601,6 @@ def fit_model_1ode(model, dvars, ivar, ics, n, data, params, var_varfit):
         if n > 1:
             sol = sol[0::n, :]
 
-        # Return only the original dependent variable.
         return sol[:, 0:1]
 
     # ------------------------------------------------------------
@@ -681,79 +625,22 @@ def fit_model_1ode(model, dvars, ivar, ics, n, data, params, var_varfit):
 # ============================================================
 # Main lmfit wrapper for first-order ODE models
 # Always returns full result dictionary
+# Stores model information inside fit["model_info"]
 # ============================================================
 
 def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, *params_data):
     """
     Fit a first-order ODE model using lmfit.
 
-    Always returns a dictionary with keys:
+    Always returns a dictionary.
 
-        "params"
-        "stderr"
-        "relative_stderr_percent"
-        "param_summary"
-        "varying_params"
-        "varying_lmfit_names"
-        "best_fit"
-        "fit_values"
-        "residuals"
-        "chisqr"
-        "redchi"
-        "residual_standard_error"
-        "aic"
-        "bic"
-        "covar"
-        "report"
-        "raw"
-        "t"
-        "y_data"
-        "data_fit"
-        "data_residuals"
+    The model specification is stored in
 
-    Parameters
-    ----------
-    model :
-        List of right-hand sides of separated first-order ODEs.
+        fit["model_info"]
 
-    dvars :
-        List of dependent variables.
+    so that confidence bands can be computed simply by
 
-    ivar :
-        Independent variable.
-
-    ics :
-        List of initial conditions.
-
-    n :
-        Refinement factor for model evaluation.
-
-    data :
-        Fitted data in the form
-
-            [[t_0, y_0],
-             [t_1, y_1],
-             ...]
-
-    fit_dvar :
-        Dependent variable fitted to the second column of data.
-
-    params_data :
-        Parameter tuples of the form
-
-            (param, min_val, max_val, init_val, vary)
-
-        or
-
-            (param, min_val, max_val, vary)
-
-    Convention
-    ----------
-    residual = model - data
-
-    Therefore
-
-    best_fit = data + residual
+        band95 = ode_confidence_band(fit, sigma=2)
     """
     data = np.array(data, dtype=float)
 
@@ -787,6 +674,17 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, *params_data):
         data
     )
 
+    # Store everything needed to recompute the ODE model later.
+    result["model_info"] = {
+        "model": model,
+        "dvars": dvars,
+        "ivar": ivar,
+        "ics": ics,
+        "n": n,
+        "data": data,
+        "fit_dvar": fit_dvar
+    }
+
     _print_fit_keys(result)
 
     return result
@@ -796,25 +694,30 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, *params_data):
 # Evaluate ODE model at chosen parameter values
 # ============================================================
 
-def ode_best_fit_at_params(model, dvars, ivar, ics, n, data, fit_dvar, param_values):
+def ode_best_fit_at_params(fit, param_values):
     """
-    Evaluate an ODE model at chosen parameter values.
+    Evaluate the ODE model stored in fit["model_info"] at chosen parameter values.
 
-    Parameters
-    ----------
-    param_values :
-        Dictionary such as
+    Example:
 
-            {g: 9.81}
-
-        or
-
-            {g: 9.81, k: 0.12}
-
-    Returns
-    -------
-    NumPy array of fitted values for fit_dvar at the data time points.
+        y_vals = ode_best_fit_at_params(fit, {g: 9.81})
     """
+    if "model_info" not in fit:
+        raise ValueError(
+            "fit does not contain model_info. "
+            "Re-run lmfit_1ode using the newest version of the package."
+        )
+
+    info = fit["model_info"]
+
+    model = info["model"]
+    dvars = info["dvars"]
+    ivar = info["ivar"]
+    ics = info["ics"]
+    n = info["n"]
+    data = info["data"]
+    fit_dvar = info["fit_dvar"]
+
     data = np.array(data, dtype=float)
 
     params = lmfit.Parameters()
@@ -845,69 +748,32 @@ def ode_best_fit_at_params(model, dvars, ivar, ics, n, data, fit_dvar, param_val
 # Approximate confidence band for ODE fit
 # ============================================================
 
-def ode_confidence_band(
-    fit,
-    model,
-    dvars,
-    ivar,
-    ics,
-    n,
-    data,
-    fit_dvar,
-    sigma=2,
-    rel_step=1e-6
-):
+def ode_confidence_band(fit, sigma=2, rel_step=1e-6):
     """
     Approximate pointwise confidence band for an ODE fit.
 
-    The method uses finite-difference sensitivities and the covariance
-    matrix from lmfit.
+    Usage:
 
-    Mathematical idea
-    -----------------
+        band95 = ode_confidence_band(fit, sigma=2)
 
-    If theta is the vector of fitted parameters, then
+    Mathematical idea:
 
         Var(y_hat(t_i)) approx J_i C J_i^T,
 
-    where C is the covariance matrix of fitted parameters and J_i is the
-    row of sensitivities
+    where C is the covariance matrix of fitted parameters and J_i is
+    the row of sensitivities dy(t_i)/dtheta_j.
 
-        dy(t_i)/dtheta_j.
-
-    Parameters
-    ----------
-    fit :
-        Result dictionary returned by lmfit_1ode.
-
-    model, dvars, ivar, ics, n, data, fit_dvar :
-        The same model specification as used in lmfit_1ode.
-
-    sigma :
-        Multiplier for the band.
-        sigma = 2 is the usual approximate 95% rule.
-
-    rel_step :
-        Relative finite-difference step for parameter sensitivities.
-
-    Returns
-    -------
-    Dictionary with keys:
-
-        "se_fit"
-        "lower"
-        "upper"
-        "data_lower"
-        "data_upper"
-        "data_band"
-        "jacobian"
-
-    Notes
-    -----
     This is a pointwise approximate confidence band for the fitted mean model.
     It is not a full prediction interval for future measurements.
     """
-    data = np.array(data, dtype=float)
+    if "model_info" not in fit:
+        raise ValueError(
+            "fit does not contain model_info. "
+            "Re-run lmfit_1ode using the newest version of the package."
+        )
+
+    info = fit["model_info"]
+    data = np.array(info["data"], dtype=float)
 
     covar = fit["covar"]
 
@@ -916,15 +782,32 @@ def ode_confidence_band(
             "Covariance matrix is None. lmfit could not estimate parameter covariance."
         )
 
+    covar = np.array(covar, dtype=float)
+
     params0 = fit["params"]
 
-    # Use only parameters that were actually varied in lmfit.
-    par_symbols = fit["varying_params"]
+    if "varying_params" in fit:
+        par_symbols = fit["varying_params"]
+    else:
+        # Fallback for older fit dictionaries
+        all_pars = list(params0.keys())
+
+        if covar.shape[0] == len(all_pars):
+            par_symbols = all_pars
+        else:
+            par_symbols = [
+                p for p in all_pars
+                if ("stderr" in fit and fit["stderr"].get(p, None) is not None)
+            ]
+
+            if covar.shape[0] != len(par_symbols):
+                raise ValueError(
+                    "Cannot determine which parameters correspond "
+                    "to the covariance matrix. Re-run lmfit_1ode."
+                )
 
     if len(par_symbols) == 0:
         raise ValueError("No varying parameters found. Confidence band cannot be computed.")
-
-    covar = np.array(covar, dtype=float)
 
     if covar.shape[0] != len(par_symbols):
         raise ValueError(
@@ -932,6 +815,7 @@ def ode_confidence_band(
         )
 
     y0 = np.array(fit["best_fit"], dtype=float).flatten()
+
     m = len(y0)
     p = len(par_symbols)
 
@@ -948,27 +832,8 @@ def ode_confidence_band(
         params_plus[par] = val + h
         params_minus[par] = val - h
 
-        y_plus = ode_best_fit_at_params(
-            model,
-            dvars,
-            ivar,
-            ics,
-            n,
-            data,
-            fit_dvar,
-            params_plus
-        )
-
-        y_minus = ode_best_fit_at_params(
-            model,
-            dvars,
-            ivar,
-            ics,
-            n,
-            data,
-            fit_dvar,
-            params_minus
-        )
+        y_plus = ode_best_fit_at_params(fit, params_plus)
+        y_minus = ode_best_fit_at_params(fit, params_minus)
 
         J[:, j] = (y_plus - y_minus) / (2*h)
 
@@ -991,7 +856,8 @@ def ode_confidence_band(
         "data_lower": np.column_stack((data[:, 0], lower)),
         "data_upper": np.column_stack((data[:, 0], upper)),
         "data_band": np.column_stack((data[:, 0], lower, upper)),
-        "jacobian": J
+        "jacobian": J,
+        "used_parameters": par_symbols
     }
 
 
@@ -999,41 +865,32 @@ def ode_confidence_band(
 # Approximate prediction band for ODE fit
 # ============================================================
 
-def ode_prediction_band(
-    fit,
-    model,
-    dvars,
-    ivar,
-    ics,
-    n,
-    data,
-    fit_dvar,
-    sigma=2,
-    rel_step=1e-6
-):
+def ode_prediction_band(fit, sigma=2, rel_step=1e-6):
     """
     Approximate pointwise prediction band for future measured data.
 
-    This adds residual scatter to the fitted-curve uncertainty:
+    Usage:
+
+        pred95 = ode_prediction_band(fit, sigma=2)
+
+    This adds residual scatter to fitted-curve uncertainty:
 
         se_pred^2 = se_fit^2 + residual_standard_error^2
-
-    This is still an approximation.
     """
+    if "model_info" not in fit:
+        raise ValueError(
+            "fit does not contain model_info. "
+            "Re-run lmfit_1ode using the newest version of the package."
+        )
+
+    info = fit["model_info"]
+    data = np.array(info["data"], dtype=float)
+
     conf = ode_confidence_band(
         fit,
-        model,
-        dvars,
-        ivar,
-        ics,
-        n,
-        data,
-        fit_dvar,
         sigma=1,
         rel_step=rel_step
     )
-
-    data = np.array(data, dtype=float)
 
     y0 = np.array(fit["best_fit"], dtype=float).flatten()
     se_fit = conf["se_fit"]
@@ -1098,7 +955,6 @@ def sage_band_plot(
     )
 
     if legend_label is not None:
-        # Dummy invisible-looking line for legend
         x0 = xmin
         x1 = xmin + 0.001*(xmax - xmin)
         y0 = float(np.min(data_lower[:, 1])) - 10.0
