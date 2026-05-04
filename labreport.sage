@@ -230,10 +230,25 @@ def read_google_table(url):
 # ============================================================
 # lmfit tools for SageMath
 # Explicit symbolic models and first-order ODE models
+# Always return full result dictionary
+# Automatically print available dictionary keys
 # ============================================================
 
 import lmfit
 import numpy as np
+
+
+# ============================================================
+# Internal helper: print available keys
+# ============================================================
+
+def _print_fit_keys(result):
+    """
+    Print available keys in the fit result dictionary.
+    """
+    print("Available fit dictionary keys:")
+    for key in result.keys():
+        print("  fit['" + key + "']")
 
 
 # ============================================================
@@ -347,38 +362,86 @@ def _collect_lmfit_output(estim, var_varfit, data):
     # Since residual = model - data
     best_fit = y_data + residuals
 
+    # Fitted parameter values
     fit_pars_dict = {
         v: estim.params[var_varfit[v]].value
         for v in var_varfit.keys()
     }
 
+    # Standard errors of fitted parameters
+    stderr_dict = {
+        v: estim.params[var_varfit[v]].stderr
+        for v in var_varfit.keys()
+    }
+
+    # Relative standard errors in percent
+    rel_stderr_dict = {}
+
+    for v in var_varfit.keys():
+        lmfit_name = var_varfit[v]
+        par = estim.params[lmfit_name]
+
+        value = par.value
+        stderr = par.stderr
+
+        if stderr is None or value == 0:
+            rel_stderr_dict[v] = None
+        else:
+            rel_stderr_dict[v] = abs(stderr / value) * 100
+
+    # Detailed parameter summary
+    param_summary = {}
+
+    for v in var_varfit.keys():
+        lmfit_name = var_varfit[v]
+        par = estim.params[lmfit_name]
+
+        param_summary[v] = {
+            "lmfit_name": lmfit_name,
+            "value": par.value,
+            "stderr": par.stderr,
+            "relative_stderr_percent": rel_stderr_dict[v],
+            "min": par.min,
+            "max": par.max,
+            "vary": par.vary,
+            "init_value": par.init_value
+        }
+
     return {
+        # Parameter information
         "params": fit_pars_dict,
+        "stderr": stderr_dict,
+        "relative_stderr_percent": rel_stderr_dict,
+        "param_summary": param_summary,
 
         # lmfit-style fitted values
         "best_fit": best_fit,
 
-        # alias
+        # Alias
         "fit_values": best_fit,
 
-        # residuals
+        # Residuals
         "residuals": residuals,
 
-        # fit statistics
+        # Fit statistics
         "chisqr": estim.chisqr,
         "redchi": estim.redchi,
+        "residual_standard_error": np.sqrt(estim.redchi),
         "aic": estim.aic,
         "bic": estim.bic,
 
-        # report and raw object
+        # Covariance matrix, if available
+        "covar": estim.covar,
+
+        # Report and raw object
         "report": lmfit.fit_report(estim),
         "raw": estim,
 
-        # original data
+        # Original data
         "t": t_values,
         "y_data": y_data,
 
-        # useful two-column arrays
+        # Useful two-column arrays
         "data_fit": np.column_stack((t_values, best_fit)),
         "data_residuals": np.column_stack((t_values, residuals))
     }
@@ -396,13 +459,18 @@ def lmfit_fun(f, data, *params_data):
     Always returns a dictionary with keys:
 
         "params"
+        "stderr"
+        "relative_stderr_percent"
+        "param_summary"
         "best_fit"
         "fit_values"
         "residuals"
         "chisqr"
         "redchi"
+        "residual_standard_error"
         "aic"
         "bic"
+        "covar"
         "report"
         "raw"
         "t"
@@ -441,6 +509,8 @@ def lmfit_fun(f, data, *params_data):
         var_varfit,
         data
     )
+
+    _print_fit_keys(result)
 
     return result
 
@@ -592,13 +662,18 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, *params_data):
     Always returns a dictionary with keys:
 
         "params"
+        "stderr"
+        "relative_stderr_percent"
+        "param_summary"
         "best_fit"
         "fit_values"
         "residuals"
         "chisqr"
         "redchi"
+        "residual_standard_error"
         "aic"
         "bic"
+        "covar"
         "report"
         "raw"
         "t"
@@ -681,5 +756,7 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, *params_data):
         var_varfit,
         data
     )
+
+    _print_fit_keys(result)
 
     return result
