@@ -232,6 +232,7 @@ def read_google_table(url):
 # Explicit symbolic models and first-order ODE models
 # Always return full result dictionary
 # Automatically print available dictionary keys
+# Includes approximate confidence bands for ODE fits
 # ============================================================
 
 import lmfit
@@ -407,12 +408,37 @@ def _collect_lmfit_output(estim, var_varfit, data):
             "init_value": par.init_value
         }
 
+    # Varying parameters in the order used by lmfit covariance matrix
+    varying_lmfit_names = list(getattr(estim, "var_names", []))
+
+    if len(varying_lmfit_names) == 0:
+        varying_lmfit_names = [
+            var_varfit[v]
+            for v in var_varfit.keys()
+            if estim.params[var_varfit[v]].vary
+        ]
+
+    lmfit_name_to_symbol = {
+        var_varfit[v]: v
+        for v in var_varfit.keys()
+    }
+
+    varying_symbols = [
+        lmfit_name_to_symbol[name]
+        for name in varying_lmfit_names
+        if name in lmfit_name_to_symbol
+    ]
+
     return {
         # Parameter information
         "params": fit_pars_dict,
         "stderr": stderr_dict,
         "relative_stderr_percent": rel_stderr_dict,
         "param_summary": param_summary,
+
+        # Parameter ordering information
+        "varying_params": varying_symbols,
+        "varying_lmfit_names": varying_lmfit_names,
 
         # lmfit-style fitted values
         "best_fit": best_fit,
@@ -462,6 +488,8 @@ def lmfit_fun(f, data, *params_data):
         "stderr"
         "relative_stderr_percent"
         "param_summary"
+        "varying_params"
+        "varying_lmfit_names"
         "best_fit"
         "fit_values"
         "residuals"
@@ -665,6 +693,8 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, *params_data):
         "stderr"
         "relative_stderr_percent"
         "param_summary"
+        "varying_params"
+        "varying_lmfit_names"
         "best_fit"
         "fit_values"
         "residuals"
@@ -760,3 +790,325 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, *params_data):
     _print_fit_keys(result)
 
     return result
+
+
+# ============================================================
+# Evaluate ODE model at chosen parameter values
+# ============================================================
+
+def ode_best_fit_at_params(model, dvars, ivar, ics, n, data, fit_dvar, param_values):
+    """
+    Evaluate an ODE model at chosen parameter values.
+
+    Parameters
+    ----------
+    param_values :
+        Dictionary such as
+
+            {g: 9.81}
+
+        or
+
+            {g: 9.81, k: 0.12}
+
+    Returns
+    -------
+    NumPy array of fitted values for fit_dvar at the data time points.
+    """
+    data = np.array(data, dtype=float)
+
+    params = lmfit.Parameters()
+    var_varfit = {}
+
+    for par, val in param_values.items():
+        name = str(par) + '_fit'
+        var_varfit[par] = name
+        params.add(name, value=float(val), vary=False)
+
+    column = dvars.index(fit_dvar)
+
+    sol = fit_model_1ode(
+        model,
+        dvars,
+        ivar,
+        ics,
+        n,
+        data,
+        params,
+        var_varfit
+    )
+
+    return sol[:, column].flatten()
+
+
+# ============================================================
+# Approximate confidence band for ODE fit
+# ============================================================
+
+def ode_confidence_band(
+    fit,
+    model,
+    dvars,
+    ivar,
+    ics,
+    n,
+    data,
+    fit_dvar,
+    sigma=2,
+    rel_step=1e-6
+):
+    """
+    Approximate pointwise confidence band for an ODE fit.
+
+    The method uses finite-difference sensitivities and the covariance
+    matrix from lmfit.
+
+    Mathematical idea
+    -----------------
+
+    If theta is the vector of fitted parameters, then
+
+        Var(y_hat(t_i)) approx J_i C J_i^T,
+
+    where C is the covariance matrix of fitted parameters and J_i is the
+    row of sensitivities
+
+        dy(t_i)/dtheta_j.
+
+    Parameters
+    ----------
+    fit :
+        Result dictionary returned by lmfit_1ode.
+
+    model, dvars, ivar, ics, n, data, fit_dvar :
+        The same model specification as used in lmfit_1ode.
+
+    sigma :
+        Multiplier for the band.
+        sigma = 2 is the usual approximate 95% rule.
+
+    rel_step :
+        Relative finite-difference step for parameter sensitivities.
+
+    Returns
+    -------
+    Dictionary with keys:
+
+        "se_fit"
+        "lower"
+        "upper"
+        "data_lower"
+        "data_upper"
+        "data_band"
+        "jacobian"
+
+    Notes
+    -----
+    This is a pointwise approximate confidence band for the fitted mean model.
+    It is not a full prediction interval for future measurements.
+    """
+    data = np.array(data, dtype=float)
+
+    covar = fit["covar"]
+
+    if covar is None:
+        raise ValueError(
+            "Covariance matrix is None. lmfit could not estimate parameter covariance."
+        )
+
+    params0 = fit["params"]
+
+    # Use only parameters that were actually varied in lmfit.
+    par_symbols = fit["varying_params"]
+
+    if len(par_symbols) == 0:
+        raise ValueError("No varying parameters found. Confidence band cannot be computed.")
+
+    covar = np.array(covar, dtype=float)
+
+    if covar.shape[0] != len(par_symbols):
+        raise ValueError(
+            "Covariance matrix size does not match the number of varying parameters."
+        )
+
+    y0 = np.array(fit["best_fit"], dtype=float).flatten()
+    m = len(y0)
+    p = len(par_symbols)
+
+    J = np.zeros((m, p), dtype=float)
+
+    for j, par in enumerate(par_symbols):
+        val = float(params0[par])
+
+        h = rel_step * max(abs(val), 1.0)
+
+        params_plus = params0.copy()
+        params_minus = params0.copy()
+
+        params_plus[par] = val + h
+        params_minus[par] = val - h
+
+        y_plus = ode_best_fit_at_params(
+            model,
+            dvars,
+            ivar,
+            ics,
+            n,
+            data,
+            fit_dvar,
+            params_plus
+        )
+
+        y_minus = ode_best_fit_at_params(
+            model,
+            dvars,
+            ivar,
+            ics,
+            n,
+            data,
+            fit_dvar,
+            params_minus
+        )
+
+        J[:, j] = (y_plus - y_minus) / (2*h)
+
+    # Pointwise variance:
+    # Var(y_i) = J_i C J_i^T
+    var_y = np.sum((J @ covar) * J, axis=1)
+
+    # Numerical safety
+    var_y = np.maximum(var_y, 0)
+
+    se_fit = np.sqrt(var_y)
+
+    lower = y0 - sigma * se_fit
+    upper = y0 + sigma * se_fit
+
+    return {
+        "se_fit": se_fit,
+        "lower": lower,
+        "upper": upper,
+        "data_lower": np.column_stack((data[:, 0], lower)),
+        "data_upper": np.column_stack((data[:, 0], upper)),
+        "data_band": np.column_stack((data[:, 0], lower, upper)),
+        "jacobian": J
+    }
+
+
+# ============================================================
+# Approximate prediction band for ODE fit
+# ============================================================
+
+def ode_prediction_band(
+    fit,
+    model,
+    dvars,
+    ivar,
+    ics,
+    n,
+    data,
+    fit_dvar,
+    sigma=2,
+    rel_step=1e-6
+):
+    """
+    Approximate pointwise prediction band for future measured data.
+
+    This adds residual scatter to the fitted-curve uncertainty:
+
+        se_pred^2 = se_fit^2 + residual_standard_error^2
+
+    This is still an approximation.
+    """
+    conf = ode_confidence_band(
+        fit,
+        model,
+        dvars,
+        ivar,
+        ics,
+        n,
+        data,
+        fit_dvar,
+        sigma=1,
+        rel_step=rel_step
+    )
+
+    data = np.array(data, dtype=float)
+
+    y0 = np.array(fit["best_fit"], dtype=float).flatten()
+    se_fit = conf["se_fit"]
+    s_res = fit["residual_standard_error"]
+
+    se_pred = np.sqrt(se_fit**2 + s_res**2)
+
+    lower = y0 - sigma * se_pred
+    upper = y0 + sigma * se_pred
+
+    return {
+        "se_pred": se_pred,
+        "lower": lower,
+        "upper": upper,
+        "data_lower": np.column_stack((data[:, 0], lower)),
+        "data_upper": np.column_stack((data[:, 0], upper)),
+        "data_band": np.column_stack((data[:, 0], lower, upper)),
+        "confidence_band": conf
+    }
+
+
+# ============================================================
+# Sage plotting helper for bands
+# ============================================================
+
+def sage_band_plot(
+    band,
+    color='gray',
+    fillcolor='gray',
+    fillalpha=0.2,
+    legend_label=None
+):
+    """
+    Create a Sage plot of a confidence or prediction band.
+
+    Input
+    -----
+    band :
+        Dictionary returned by ode_confidence_band or ode_prediction_band.
+
+    Returns
+    -------
+    Sage graphics object.
+    """
+    data_lower = band["data_lower"]
+    data_upper = band["data_upper"]
+
+    G_lower = spline(list(map(tuple, data_lower)))
+    G_upper = spline(list(map(tuple, data_upper)))
+
+    xmin = float(data_lower[0, 0])
+    xmax = float(data_lower[-1, 0])
+
+    G_band = plot(
+        [G_lower, G_upper],
+        fill={1: [0]},
+        xmin=xmin,
+        xmax=xmax,
+        color=color,
+        fillcolor=fillcolor,
+        fillalpha=fillalpha
+    )
+
+    if legend_label is not None:
+        # Dummy invisible-looking line for legend
+        x0 = xmin
+        x1 = xmin + 0.001*(xmax - xmin)
+        y0 = float(np.min(data_lower[:, 1])) - 10.0
+
+        G_legend = line(
+            [(x0, y0), (x1, y0)],
+            color=color,
+            legend_label=legend_label
+        )
+
+        return G_band + G_legend
+
+    return G_band
