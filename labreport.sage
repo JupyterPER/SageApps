@@ -1,4 +1,4 @@
-print("Downloading the package...")
+print("Downloading the package labreport...")
 
 # nacitanie kniznic
 import numpy as np
