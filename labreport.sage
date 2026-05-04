@@ -232,6 +232,64 @@ def read_google_table(url):
 # Explicit symbolic models and first-order ODE models
 # ============================================================
 
+import lmfit
+import numpy as np
+
+
+# ============================================================
+# Internal helper: add lmfit parameters
+# ============================================================
+
+def _add_lmfit_parameter(params, var_varfit, par_data):
+    """
+    Add one parameter to lmfit.Parameters.
+
+    Accepted forms:
+
+        (param, min_val, max_val, init_val, vary)
+
+    or
+
+        (param, min_val, max_val, vary)
+
+    If init_val is not given, the midpoint of finite bounds is used.
+    """
+    if len(par_data) not in [4, 5]:
+        raise ValueError(
+            "Parameter data must have the form "
+            "(param, min_val, max_val, vary) or "
+            "(param, min_val, max_val, init_val, vary)."
+        )
+
+    par = par_data[0]
+    name = str(par) + '_fit'
+    var_varfit[par] = name
+
+    par_min = float(par_data[1])
+    par_max = float(par_data[2])
+    par_vary = bool(par_data[-1])
+
+    if len(par_data) == 5:
+        par_init = float(par_data[3])
+    else:
+        # Automatic initial value if not supplied
+        if np.isfinite(par_min) and np.isfinite(par_max):
+            par_init = (par_min + par_max) / 2
+        elif np.isfinite(par_min):
+            par_init = par_min + 1.0
+        elif np.isfinite(par_max):
+            par_init = par_max - 1.0
+        else:
+            par_init = 1.0
+
+    params.add(
+        name,
+        min=par_min,
+        max=par_max,
+        value=par_init,
+        vary=par_vary
+    )
+
 
 # ============================================================
 # Basic fitting of explicit symbolic functions
@@ -241,6 +299,7 @@ def f_eval_list(f, l):
     """
     Evaluate a one-variable Sage symbolic expression f on a list/array l.
     """
+    f = SR(f)
     ivar = f.variables()[0]
     return np.array([f.subs(ivar == i) for i in l])
 
@@ -249,11 +308,13 @@ def fit_model_fun(f, data, params, var_varfit):
     """
     Evaluate an explicit symbolic model f after substituting fitted parameters.
     """
+    f = SR(f)
+
     vars_list = list(var_varfit.keys())
     pd = params.valuesdict()
 
     subs_vals = [v == pd[var_varfit[v]] for v in vars_list]
-    subs_vals_f = SR(f).subs(subs_vals)
+    subs_vals_f = f.subs(subs_vals)
 
     vals = f_eval_list(subs_vals_f, data[:, 0])
     return vals
@@ -294,22 +355,26 @@ def _collect_lmfit_output(estim, var_varfit, data):
     return {
         "params": fit_pars_dict,
 
-        # lmfit-style name
+        # lmfit-style fitted values
         "best_fit": best_fit,
 
         # alias
         "fit_values": best_fit,
 
+        # residuals
         "residuals": residuals,
 
+        # fit statistics
         "chisqr": estim.chisqr,
         "redchi": estim.redchi,
         "aic": estim.aic,
         "bic": estim.bic,
 
+        # report and raw object
         "report": lmfit.fit_report(estim),
         "raw": estim,
 
+        # original data
         "t": t_values,
         "y_data": y_data,
 
@@ -319,131 +384,51 @@ def _collect_lmfit_output(estim, var_varfit, data):
     }
 
 
-def _return_requested_output(result, output):
-    """
-    Return selected output from the full result dictionary.
-    """
-    if output == 'all':
-        return result
-
-    elif output == 'report':
-        print(result["report"])
-        return result
-
-    elif output == 'params':
-        return result["params"]
-
-    elif output == 'best_fit':
-        return result["best_fit"]
-
-    elif output == 'fit':
-        return result["best_fit"]
-
-    elif output == 'fit_values':
-        return result["fit_values"]
-
-    elif output == 'residuals':
-        return result["residuals"]
-
-    elif output == 'chisqr':
-        return result["chisqr"]
-
-    elif output == 'redchi':
-        return result["redchi"]
-
-    elif output == 'aic':
-        return result["aic"]
-
-    elif output == 'bic':
-        return result["bic"]
-
-    elif output == 'raw':
-        return result["raw"]
-
-    else:
-        raise ValueError(
-            "Unknown output option. Use 'all', 'report', 'params', "
-            "'best_fit', 'fit', 'fit_values', 'residuals', 'chisqr', "
-            "'redchi', 'aic', 'bic', or 'raw'."
-        )
-
-
 # ============================================================
 # Main lmfit wrapper for explicit symbolic functions
+# Always returns full result dictionary
 # ============================================================
 
-def lmfit_fun(f, data, output, *params_data):
+def lmfit_fun(f, data, *params_data):
     """
     Fit an explicit one-variable symbolic function.
 
-    Parameters
-    ----------
-    f :
-        Sage symbolic expression of one independent variable.
+    Always returns a dictionary with keys:
 
-    data :
-        NumPy array of the form
+        "params"
+        "best_fit"
+        "fit_values"
+        "residuals"
+        "chisqr"
+        "redchi"
+        "aic"
+        "bic"
+        "report"
+        "raw"
+        "t"
+        "y_data"
+        "data_fit"
+        "data_residuals"
 
-            [[t_0, y_0],
-             [t_1, y_1],
-             ...]
+    Parameter tuples have the form
 
-    output :
-        Output option:
+        (param, min_val, max_val, init_val, vary)
 
-            'all'        - return dictionary with all useful outputs
-            'report'     - print report and also return dictionary
-            'params'     - return fitted parameter dictionary only
-            'best_fit'   - return fitted model values only
-            'fit'        - same as 'best_fit'
-            'fit_values' - same as 'best_fit'
-            'residuals'  - return residuals only
-            'chisqr'     - return chi-square only
-            'redchi'     - return reduced chi-square only
-            'aic'        - return AIC only
-            'bic'        - return BIC only
-            'raw'        - return raw lmfit result object
+    or
 
-    params_data :
-        Parameter tuples of the form
-
-            (param, min_val, max_val, init_val, vary)
-
-        or
-
-            (param, min_val, max_val, vary)
+        (param, min_val, max_val, vary)
 
     Convention
     ----------
     residual = model - data
     """
+    data = np.array(data, dtype=float)
+
     params = lmfit.Parameters()
     var_varfit = {}
 
     for par_data in params_data:
-        name = str(par_data[0]) + '_fit'
-        var_varfit[par_data[0]] = name
-
-        par_min = float(par_data[1])
-        par_max = float(par_data[2])
-        par_vary = par_data[-1]
-
-        if len(par_data) == 5:
-            par_init = float(par_data[3])
-            params.add(
-                name,
-                min=par_min,
-                max=par_max,
-                value=par_init,
-                vary=par_vary
-            )
-        else:
-            params.add(
-                name,
-                min=par_min,
-                max=par_max,
-                vary=par_vary
-            )
+        _add_lmfit_parameter(params, var_varfit, par_data)
 
     fcn = lambda params: (
         fit_model_fun(f, data, params, var_varfit) - data[:, 1]
@@ -457,7 +442,7 @@ def lmfit_fun(f, data, output, *params_data):
         data
     )
 
-    return _return_requested_output(result, output)
+    return result
 
 
 # ============================================================
@@ -508,6 +493,7 @@ def fit_model_1ode(model, dvars, ivar, ics, n, data, params, var_varfit):
 
     Examples
     --------
+
     One ODE:
 
         dv/dt = g
@@ -536,12 +522,14 @@ def fit_model_1ode(model, dvars, ivar, ics, n, data, params, var_varfit):
 
     The dummy variable is only an implementation detail.
     """
+    data = np.array(data, dtype=float)
+
     vars_list = list(var_varfit.keys())
     pd = params.valuesdict()
 
     subs_vals = [v == pd[var_varfit[v]] for v in vars_list]
 
-    # SR(eq) makes the code robust also when some equation is plain 0
+    # SR(eq) makes the code robust also when some equation is plain 0.
     subs_vals_model = [SR(eq).subs(subs_vals) for eq in model]
 
     times = refined_times_from_data(data[:, 0], n)
@@ -594,11 +582,29 @@ def fit_model_1ode(model, dvars, ivar, ics, n, data, params, var_varfit):
 
 # ============================================================
 # Main lmfit wrapper for first-order ODE models
+# Always returns full result dictionary
 # ============================================================
 
-def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, output, *params_data):
+def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, *params_data):
     """
     Fit a first-order ODE model using lmfit.
+
+    Always returns a dictionary with keys:
+
+        "params"
+        "best_fit"
+        "fit_values"
+        "residuals"
+        "chisqr"
+        "redchi"
+        "aic"
+        "bic"
+        "report"
+        "raw"
+        "t"
+        "y_data"
+        "data_fit"
+        "data_residuals"
 
     Parameters
     ----------
@@ -617,12 +623,6 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, output, *params_data)
     n :
         Refinement factor for model evaluation.
 
-        n = 1:
-            no refinement.
-
-        n = 5:
-            five times more internal time points.
-
     data :
         Fitted data in the form
 
@@ -632,22 +632,6 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, output, *params_data)
 
     fit_dvar :
         Dependent variable fitted to the second column of data.
-
-    output :
-        Output option:
-
-            'all'        - return dictionary with all useful outputs
-            'report'     - print report and also return dictionary
-            'params'     - return fitted parameter dictionary only
-            'best_fit'   - return fitted model values only
-            'fit'        - same as 'best_fit'
-            'fit_values' - same as 'best_fit'
-            'residuals'  - return residuals only
-            'chisqr'     - return chi-square only
-            'redchi'     - return reduced chi-square only
-            'aic'        - return AIC only
-            'bic'        - return BIC only
-            'raw'        - return raw lmfit result object
 
     params_data :
         Parameter tuples of the form
@@ -666,33 +650,13 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, output, *params_data)
 
     best_fit = data + residual
     """
+    data = np.array(data, dtype=float)
+
     params = lmfit.Parameters()
     var_varfit = {}
 
     for par_data in params_data:
-        name = str(par_data[0]) + '_fit'
-        var_varfit[par_data[0]] = name
-
-        par_min = float(par_data[1])
-        par_max = float(par_data[2])
-        par_vary = par_data[-1]
-
-        if len(par_data) == 5:
-            par_init = float(par_data[3])
-            params.add(
-                name,
-                min=par_min,
-                max=par_max,
-                value=par_init,
-                vary=par_vary
-            )
-        else:
-            params.add(
-                name,
-                min=par_min,
-                max=par_max,
-                vary=par_vary
-            )
+        _add_lmfit_parameter(params, var_varfit, par_data)
 
     column = dvars.index(fit_dvar)
 
@@ -718,4 +682,4 @@ def lmfit_1ode(model, dvars, ivar, ics, n, data, fit_dvar, output, *params_data)
         data
     )
 
-    return _return_requested_output(result, output)
+    return result
