@@ -968,7 +968,6 @@ def sage_band_plot(
         return G_band + G_legend
 
     return G_band
-
 # ============================================================
 # Extended find_fit wrapper for labreport.sage
 # ============================================================
@@ -990,9 +989,13 @@ def sage_band_plot(
 #
 #            fit = find_fit(data, formula, report='all', ...)
 #
-#     3. ODE model with Sage-like output:
+#     3. ODE model with default dictionary output:
 #
 #            find_fit(data, model_ode, type='ode')
+#
+#        returns for example:
+#
+#            {g: (estimate, stderr)}
 #
 #     4. ODE model with detailed lmfit dictionary:
 #
@@ -1251,45 +1254,111 @@ def _make_lmfit_params_data(args, kwargs):
 
 
 # ------------------------------------------------------------
-# Internal helper: convert lmfit dictionary to Sage-like output
+# Internal helper: available output string
 # ------------------------------------------------------------
 
-def _fit_result_to_sage_output(fit, solution_dict=False):
+def _fit_outputs_string(fit):
     """
-    Convert our lmfit result dictionary to Sage find_fit-like output.
+    Create a help string listing available keys in the fit dictionary.
+    """
+    lines = []
+    lines.append("Available fit dictionary keys:")
+    for key in fit.keys():
+        lines.append("  fit['" + str(key) + "']")
+    return "\n".join(lines)
 
-    If solution_dict=False:
 
-        [g == 9.81, k == 0.12]
+def _attach_outputs_string(fit):
+    """
+    Add output/help strings into the fit dictionary.
 
-    If solution_dict=True:
+    Both keys are provided:
 
-        {g: 9.81, k: 0.12}
+        fit['output']
+        fit['outputs']
+
+    because both names are natural and easy to remember.
+    """
+    fit["output"] = ""
+    fit["outputs"] = ""
+
+    output_text = _fit_outputs_string(fit)
+
+    fit["output"] = output_text
+    fit["outputs"] = output_text
+
+    return fit
+
+
+# ------------------------------------------------------------
+# Internal helper: convert lmfit dictionary to default output
+# ------------------------------------------------------------
+
+def _fit_result_to_default_output(fit, solution_dict=True, include_stderr=True):
+    """
+    Convert our lmfit result dictionary to compact default output.
+
+    Default behavior for lmfit-based fits:
+
+        {g: (estimate, stderr)}
+
+    If include_stderr=False:
+
+        {g: estimate}
+
+    If solution_dict=False and include_stderr=True:
+
+        [(g, estimate, stderr)]
+
+    If solution_dict=False and include_stderr=False:
+
+        [g == estimate]
     """
     pars = fit["params"]
+    stderrs = fit.get("stderr", {})
 
-    if solution_dict:
-        return dict(pars)
+    if include_stderr:
+        out = {
+            p: (pars[p], stderrs.get(p, None))
+            for p in pars.keys()
+        }
 
-    return [p == val for p, val in pars.items()]
+        if solution_dict:
+            return out
+
+        return [
+            (p, pars[p], stderrs.get(p, None))
+            for p in pars.keys()
+        ]
+
+    else:
+        if solution_dict:
+            return dict(pars)
+
+        return [p == val for p, val in pars.items()]
 
 
 # ------------------------------------------------------------
-# Internal helper: optionally suppress printed output
+# Internal helper: call lmfit function, suppress printing,
+# and store output help string inside fit dictionary
 # ------------------------------------------------------------
 
-def _silent_call(func, *args, silent=False, **kwargs):
+def _call_lmfit_and_attach_outputs(func, *args, **kwargs):
     """
-    Call a function with optional suppression of printed output.
+    Call lmfit_fun or lmfit_1ode while suppressing internal printed output.
 
-    lmfit_1ode and lmfit_fun print available dictionary keys.
-    For report='default' we suppress this to imitate Sage-like behavior.
+    The resulting dictionary receives:
+
+        fit['output']
+        fit['outputs']
     """
-    if silent:
-        with contextlib.redirect_stdout(io.StringIO()):
-            return func(*args, **kwargs)
+    with contextlib.redirect_stdout(io.StringIO()):
+        fit = func(*args, **kwargs)
 
-    return func(*args, **kwargs)
+    if isinstance(fit, dict):
+        fit = _attach_outputs_string(fit)
+
+    return fit
 
 
 # ------------------------------------------------------------
@@ -1315,8 +1384,16 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
         'ode'      - ODE model fitted by lmfit_1ode
 
     report :
-        'default'  - Sage-like output
+        'default'  - compact output
         'all'      - full lmfit dictionary output
+
+    For type='ode' and report='default', the default output is now:
+
+        {parameter: (estimate, stderr)}
+
+    Example:
+
+        {g: (9.81, 0.04)}
     """
 
     model_type = str(type).lower()
@@ -1340,7 +1417,8 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
 
         params_data = _make_lmfit_params_data(args, kwargs)
 
-        fit = lmfit_fun(
+        fit = _call_lmfit_and_attach_outputs(
+            lmfit_fun,
             model,
             data,
             *params_data
@@ -1403,9 +1481,13 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
 
             params_data = _make_lmfit_params_data(args, kwargs)
 
-        solution_dict = kwargs.get("solution_dict", False)
+        # By default for lmfit-based ODE fits we return dictionary output.
+        solution_dict = kwargs.get("solution_dict", True)
 
-        fit = _silent_call(
+        # By default include standard errors.
+        include_stderr = kwargs.get("include_stderr", True)
+
+        fit = _call_lmfit_and_attach_outputs(
             lmfit_1ode,
             ode_rhs,
             dvars,
@@ -1414,17 +1496,17 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
             n,
             data,
             fit_dvar,
-            *params_data,
-            silent=(report_type != "all")
+            *params_data
         )
 
         if report_type == "all":
             return fit
 
         if report_type in ["default", "sage"]:
-            return _fit_result_to_sage_output(
+            return _fit_result_to_default_output(
                 fit,
-                solution_dict=solution_dict
+                solution_dict=solution_dict,
+                include_stderr=include_stderr
             )
 
         raise ValueError(
@@ -1474,6 +1556,10 @@ Examples
         bounds={a: (-10, 10), b: (-10, 10)}
     )
 
+Then:
+
+    print(fit["outputs"])
+
 3. Formula model with lmfit-style parameter tuples:
 
     fit = find_fit(
@@ -1501,6 +1587,10 @@ Examples
         type='ode'
     )
 
+returns for example:
+
+    {g: (estimate, stderr)}
+
 5. ODE model packaged by ode_model(...) with detailed lmfit output:
 
     fit = find_fit(
@@ -1512,6 +1602,7 @@ Examples
 
 Then use:
 
+    print(fit["outputs"])
     fit["params"]
     fit["stderr"]
     fit["best_fit"]
@@ -1521,4 +1612,12 @@ Then use:
 For ODE fits with report='all', confidence bands can be computed by:
 
     band95 = ode_confidence_band(fit, sigma=2)
+
+To suppress standard errors in default ODE output:
+
+    find_fit(data, model_ode, type='ode', include_stderr=False)
+
+then the output is:
+
+    {g: estimate}
 """
