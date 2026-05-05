@@ -968,6 +968,7 @@ def sage_band_plot(
         return G_band + G_legend
 
     return G_band
+
 # ============================================================
 # Extended find_fit wrapper for labreport.sage
 # ============================================================
@@ -979,27 +980,24 @@ def sage_band_plot(
 #     ode_confidence_band
 #     ode_prediction_band
 #
-# Purpose:
+# Main behavior:
 #
-#     1. Original SageMath behavior is preserved:
+#     find_fit(data, model)
+#         -> original SageMath find_fit
 #
-#            find_fit(data, model)
+#     find_fit(data, formula, (g, 5, 20, True))
+#         -> lmfit_fun, compact dictionary {g: (estimate, stderr)}
 #
-#     2. Formula model with detailed lmfit dictionary:
+#     find_fit(data, formula, (g, 5, 20, True), report='all')
+#         -> lmfit_fun, full dictionary
 #
-#            fit = find_fit(data, formula, report='all', ...)
+#     model_ode = ode_model(...)
 #
-#     3. ODE model with default dictionary output:
+#     find_fit(data, model_ode)
+#         -> lmfit_1ode, compact dictionary {g: (estimate, stderr)}
 #
-#            find_fit(data, model_ode, type='ode')
-#
-#        returns for example:
-#
-#            {g: (estimate, stderr)}
-#
-#     4. ODE model with detailed lmfit dictionary:
-#
-#            fit = find_fit(data, model_ode, type='ode', report='all')
+#     find_fit(data, model_ode, report='all')
+#         -> lmfit_1ode, full dictionary
 #
 # ============================================================
 
@@ -1039,41 +1037,13 @@ def ode_model(model, dvars, ivar, ics, fit_dvar, *params_data, n=1):
             n=1
         )
 
+        find_fit(data, model_ode)
+
         fit = find_fit(
             data,
             model_ode,
-            type='ode',
             report='all'
         )
-
-    Parameters
-    ----------
-    model :
-        List of right-hand sides of first-order ODEs.
-
-    dvars :
-        List of dependent variables.
-
-    ivar :
-        Independent variable.
-
-    ics :
-        Initial conditions.
-
-    fit_dvar :
-        Dependent variable fitted to the second column of data.
-
-    params_data :
-        lmfit-style parameter tuples, for example
-
-            (g, 8, 15, True)
-
-        or
-
-            (g, 8, 15, 9.8, True)
-
-    n :
-        Internal refinement factor for ODE solving.
     """
     return {
         "_lab_model_type": "ode",
@@ -1085,6 +1055,17 @@ def ode_model(model, dvars, ivar, ics, fit_dvar, *params_data, n=1):
         "params_data": tuple(params_data),
         "n": n
     }
+
+
+# ------------------------------------------------------------
+# Internal helper: detect packaged ODE model
+# ------------------------------------------------------------
+
+def _is_packaged_ode_model(model):
+    """
+    Check whether model was created by ode_model(...).
+    """
+    return isinstance(model, dict) and model.get("_lab_model_type", None) == "ode"
 
 
 # ------------------------------------------------------------
@@ -1229,7 +1210,7 @@ def _make_lmfit_params_data(args, kwargs):
 
     if parameters is None:
         raise ValueError(
-            "For report='all' or type='ode', provide either lmfit-style "
+            "For lmfit-based fitting, provide either lmfit-style "
             "parameter tuples, fit_params=[...], or parameters=[...]."
         )
 
@@ -1251,6 +1232,36 @@ def _make_lmfit_params_data(args, kwargs):
             params_data.append((par, par_min, par_max, par_init, True))
 
     return tuple(params_data)
+
+
+# ------------------------------------------------------------
+# Internal helper: decide whether formula call should use lmfit
+# ------------------------------------------------------------
+
+def _formula_call_requests_lmfit(args, kwargs, report_type):
+    """
+    Decide whether a formula-type call should be handled by lmfit_fun.
+
+    Original Sage behavior is preserved for plain Sage calls such as:
+
+        find_fit(data, model)
+        find_fit(data, model, parameters=[a, b], variables=[x])
+
+    lmfit is used when:
+        - report='all'
+        - positional lmfit-style parameter tuples are supplied
+        - fit_params is supplied
+    """
+    if report_type == "all":
+        return True
+
+    if _looks_like_lmfit_params(args):
+        return True
+
+    if "fit_params" in kwargs:
+        return True
+
+    return False
 
 
 # ------------------------------------------------------------
@@ -1276,8 +1287,6 @@ def _attach_outputs_string(fit):
 
         fit['output']
         fit['outputs']
-
-    because both names are natural and easy to remember.
     """
     fit["output"] = ""
     fit["outputs"] = ""
@@ -1291,14 +1300,14 @@ def _attach_outputs_string(fit):
 
 
 # ------------------------------------------------------------
-# Internal helper: convert lmfit dictionary to default output
+# Internal helper: compact default output
 # ------------------------------------------------------------
 
 def _fit_result_to_default_output(fit, solution_dict=True, include_stderr=True):
     """
-    Convert our lmfit result dictionary to compact default output.
+    Convert lmfit result dictionary to compact default output.
 
-    Default behavior for lmfit-based fits:
+    Default:
 
         {g: (estimate, stderr)}
 
@@ -1376,45 +1385,52 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
 
     uses the original SageMath find_fit.
 
-    Added keyword parameters
-    ------------------------
+    Formula behavior:
 
-    type :
-        'formula'  - formula model; original SageMath behavior if report='default'
-        'ode'      - ODE model fitted by lmfit_1ode
+        find_fit(data, model)
+            -> original SageMath find_fit
 
-    report :
-        'default'  - compact output
-        'all'      - full lmfit dictionary output
+        find_fit(data, model, (g, 5, 20, True))
+            -> lmfit_fun, compact output {g: (estimate, stderr)}
 
-    For type='ode' and report='default', the default output is now:
+        find_fit(data, model, (g, 5, 20, True), report='all')
+            -> lmfit_fun, full dictionary
 
-        {parameter: (estimate, stderr)}
+    ODE behavior:
 
-    Example:
+        model_ode = ode_model(...)
 
-        {g: (9.81, 0.04)}
+        find_fit(data, model_ode)
+            -> lmfit_1ode, compact output {g: (estimate, stderr)}
+
+        find_fit(data, model_ode, report='all')
+            -> lmfit_1ode, full dictionary
+
+    Notes
+    -----
+    The keyword type='ode' is no longer needed for packaged ODE models.
+    It is still accepted only for backward compatibility.
     """
 
     model_type = str(type).lower()
     report_type = str(report).lower()
 
-    # ------------------------------------------------------------
-    # 1. Original SageMath behavior
-    # ------------------------------------------------------------
-    if model_type in ["formula", "sage", "standard"] and report_type in ["default", "sage"]:
-        return _sage_find_fit_original(data, model, *args, **kwargs)
+    # Automatically detect packaged ODE model.
+    if _is_packaged_ode_model(model):
+        model_type = "ode"
 
     # ------------------------------------------------------------
-    # 2. Formula model with detailed lmfit output
+    # 1. Formula model
     # ------------------------------------------------------------
-    if model_type in ["formula", "fun", "function", "explicit"]:
-        if report_type != "all":
-            raise ValueError(
-                "For type='formula', use report='default' for original SageMath "
-                "behavior or report='all' for detailed lmfit output."
-            )
+    if model_type in ["formula", "sage", "standard", "fun", "function", "explicit"]:
 
+        use_lmfit = _formula_call_requests_lmfit(args, kwargs, report_type)
+
+        # Original SageMath behavior
+        if not use_lmfit:
+            return _sage_find_fit_original(data, model, *args, **kwargs)
+
+        # lmfit-based formula fit
         params_data = _make_lmfit_params_data(args, kwargs)
 
         fit = _call_lmfit_and_attach_outputs(
@@ -1424,17 +1440,32 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
             *params_data
         )
 
-        return fit
+        if report_type == "all":
+            return fit
+
+        if report_type in ["default", "sage"]:
+            solution_dict = kwargs.get("solution_dict", True)
+            include_stderr = kwargs.get("include_stderr", True)
+
+            return _fit_result_to_default_output(
+                fit,
+                solution_dict=solution_dict,
+                include_stderr=include_stderr
+            )
+
+        raise ValueError(
+            "Unknown report option. Use report='default' or report='all'."
+        )
 
     # ------------------------------------------------------------
-    # 3. ODE model fitted by lmfit_1ode
+    # 2. ODE model fitted by lmfit_1ode
     # ------------------------------------------------------------
     if model_type in ["ode", "1ode", "odeint"]:
 
         # --------------------------------------------------------
         # Case A: model is packaged by ode_model(...)
         # --------------------------------------------------------
-        if isinstance(model, dict) and model.get("_lab_model_type", None) == "ode":
+        if _is_packaged_ode_model(model):
             ode_info = model
 
             ode_rhs = ode_info["model"]
@@ -1461,6 +1492,7 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
 
         # --------------------------------------------------------
         # Case B: direct ODE syntax without ode_model(...)
+        # Backward compatibility only.
         # --------------------------------------------------------
         else:
             required = ["dvars", "ivar", "ics", "fit_dvar"]
@@ -1468,8 +1500,8 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
             for key in required:
                 if key not in kwargs:
                     raise ValueError(
-                        "For type='ode', either use ode_model(...), "
-                        "or provide " + key + "."
+                        "For ODE fitting, preferably use ode_model(...). "
+                        "For direct syntax, provide " + key + "."
                     )
 
             ode_rhs = model
@@ -1480,12 +1512,6 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
             n = kwargs.get("n", 1)
 
             params_data = _make_lmfit_params_data(args, kwargs)
-
-        # By default for lmfit-based ODE fits we return dictionary output.
-        solution_dict = kwargs.get("solution_dict", True)
-
-        # By default include standard errors.
-        include_stderr = kwargs.get("include_stderr", True)
 
         fit = _call_lmfit_and_attach_outputs(
             lmfit_1ode,
@@ -1503,6 +1529,9 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
             return fit
 
         if report_type in ["default", "sage"]:
+            solution_dict = kwargs.get("solution_dict", True)
+            include_stderr = kwargs.get("include_stderr", True)
+
             return _fit_result_to_default_output(
                 fit,
                 solution_dict=solution_dict,
@@ -1514,7 +1543,7 @@ def find_fit(data, model, *args, type='formula', report='default', **kwargs):
         )
 
     raise ValueError(
-        "Unknown type. Use type='formula' or type='ode'."
+        "Unknown model type. Use an ordinary formula model or a model created by ode_model(...)."
     )
 
 
@@ -1527,48 +1556,51 @@ find_fit.__doc__ = (find_fit.__doc__ or "") + r"""
 Extension in labreport.sage
 ---------------------------
 
-The original SageMath behavior is preserved:
+Original SageMath behavior is preserved:
 
     find_fit(data, model)
 
 calls the original SageMath find_fit.
 
-New keyword parameters:
-
-    type='formula' or type='ode'
-    report='default' or report='all'
-
-Examples
---------
+Formula model examples
+----------------------
 
 1. Original SageMath behavior:
 
-    find_fit(data, a + b*x, parameters=[a, b], variables=[x])
+    find_fit(data, model)
 
-2. Formula model with detailed lmfit output:
+2. Formula model with compact lmfit output:
+
+    find_fit(
+        data,
+        model,
+        (g, 5, 20, True)
+    )
+
+returns:
+
+    {g: (estimate, stderr)}
+
+3. Formula model with full lmfit output:
 
     fit = find_fit(
         data,
-        a + b*x,
-        report='all',
-        parameters=[a, b],
-        initial_guess=[0, 1],
-        bounds={a: (-10, 10), b: (-10, 10)}
+        model,
+        (g, 5, 20, True),
+        report='all'
     )
 
 Then:
 
     print(fit["outputs"])
+    fit["params"]
+    fit["stderr"]
+    fit["best_fit"]
+    fit["chisqr"]
+    print(fit["report"])
 
-3. Formula model with lmfit-style parameter tuples:
-
-    fit = find_fit(
-        data,
-        a + b*x,
-        (a, -10, 10, 0, True),
-        (b, -10, 10, 1, True),
-        report='all'
-    )
+ODE model examples
+------------------
 
 4. ODE model packaged by ode_model(...):
 
@@ -1581,26 +1613,21 @@ Then:
         (g, 8, 15, True)
     )
 
-    find_fit(
-        data,
-        model_ode,
-        type='ode'
-    )
+    find_fit(data, model_ode)
 
-returns for example:
+returns:
 
     {g: (estimate, stderr)}
 
-5. ODE model packaged by ode_model(...) with detailed lmfit output:
+5. ODE model with full lmfit output:
 
     fit = find_fit(
         data,
         model_ode,
-        type='ode',
         report='all'
     )
 
-Then use:
+Then:
 
     print(fit["outputs"])
     fit["params"]
@@ -1609,15 +1636,15 @@ Then use:
     fit["chisqr"]
     print(fit["report"])
 
-For ODE fits with report='all', confidence bands can be computed by:
+For ODE fits with report='all':
 
     band95 = ode_confidence_band(fit, sigma=2)
 
-To suppress standard errors in default ODE output:
+To suppress standard errors in compact lmfit output:
 
-    find_fit(data, model_ode, type='ode', include_stderr=False)
+    find_fit(data, model, (g, 5, 20, True), include_stderr=False)
 
-then the output is:
+or:
 
-    {g: estimate}
+    find_fit(data, model_ode, include_stderr=False)
 """
