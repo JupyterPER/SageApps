@@ -968,3 +968,557 @@ def sage_band_plot(
         return G_band + G_legend
 
     return G_band
+
+# ============================================================
+# Extended find_fit wrapper for labreport.sage
+# ============================================================
+#
+# Requires already defined:
+#
+#     lmfit_fun
+#     lmfit_1ode
+#     ode_confidence_band
+#     ode_prediction_band
+#
+# Purpose:
+#
+#     1. Original SageMath behavior is preserved:
+#
+#            find_fit(data, model)
+#
+#     2. Formula model with detailed lmfit dictionary:
+#
+#            fit = find_fit(data, formula, report='all', ...)
+#
+#     3. ODE model with Sage-like output:
+#
+#            find_fit(data, model_ode, type='ode')
+#
+#     4. ODE model with detailed lmfit dictionary:
+#
+#            fit = find_fit(data, model_ode, type='ode', report='all')
+#
+# ============================================================
+
+from functools import wraps
+import contextlib
+import io
+import numpy as np
+
+
+# ------------------------------------------------------------
+# Store original SageMath find_fit only once.
+# This prevents accidental recursion if this cell is loaded repeatedly.
+# ------------------------------------------------------------
+
+if "_sage_find_fit_original" not in globals():
+    _sage_find_fit_original = find_fit
+
+
+# ------------------------------------------------------------
+# Packaged ODE model constructor
+# ------------------------------------------------------------
+
+def ode_model(model, dvars, ivar, ics, fit_dvar, *params_data, n=1):
+    """
+    Create a packaged ODE model for the extended find_fit.
+
+    Example
+    -------
+
+        model_ode = ode_model(
+            model_y_odpor,
+            [y, v],
+            t,
+            ics,
+            y,
+            (g, 8, 15, True),
+            n=1
+        )
+
+        fit = find_fit(
+            data,
+            model_ode,
+            type='ode',
+            report='all'
+        )
+
+    Parameters
+    ----------
+    model :
+        List of right-hand sides of first-order ODEs.
+
+    dvars :
+        List of dependent variables.
+
+    ivar :
+        Independent variable.
+
+    ics :
+        Initial conditions.
+
+    fit_dvar :
+        Dependent variable fitted to the second column of data.
+
+    params_data :
+        lmfit-style parameter tuples, for example
+
+            (g, 8, 15, True)
+
+        or
+
+            (g, 8, 15, 9.8, True)
+
+    n :
+        Internal refinement factor for ODE solving.
+    """
+    return {
+        "_lab_model_type": "ode",
+        "model": model,
+        "dvars": dvars,
+        "ivar": ivar,
+        "ics": ics,
+        "fit_dvar": fit_dvar,
+        "params_data": tuple(params_data),
+        "n": n
+    }
+
+
+# ------------------------------------------------------------
+# Internal helper: detect lmfit parameter tuples
+# ------------------------------------------------------------
+
+def _looks_like_lmfit_params(args):
+    """
+    Check whether positional arguments look like lmfit parameter tuples:
+
+        (param, min_val, max_val, vary)
+
+    or
+
+        (param, min_val, max_val, init_val, vary)
+    """
+    if len(args) == 0:
+        return False
+
+    return all(
+        isinstance(a, (tuple, list)) and len(a) in [4, 5]
+        for a in args
+    )
+
+
+# ------------------------------------------------------------
+# Internal helper: initial guesses
+# ------------------------------------------------------------
+
+def _value_from_initial_guess(initial_guess, parameters, par, idx):
+    """
+    Extract initial value for one parameter.
+
+    Supported forms:
+
+        initial_guess = {a: 1, b: 2}
+
+    or
+
+        initial_guess = [1, 2]
+    """
+    if initial_guess is None:
+        return None
+
+    if isinstance(initial_guess, dict):
+        return initial_guess.get(par, None)
+
+    if isinstance(initial_guess, (list, tuple)):
+        if idx < len(initial_guess):
+            return initial_guess[idx]
+        return None
+
+    return None
+
+
+# ------------------------------------------------------------
+# Internal helper: parameter bounds
+# ------------------------------------------------------------
+
+def _bounds_for_parameter(bounds, parameters, par, idx):
+    """
+    Extract bounds for one parameter.
+
+    Supported forms:
+
+        bounds = {a: (-10, 10), b: (0, 5)}
+
+    or
+
+        bounds = [(-10, 10), (0, 5)]
+
+    If bounds are not supplied, use unbounded lmfit parameters.
+    """
+    if bounds is None:
+        return -np.inf, np.inf
+
+    if isinstance(bounds, dict):
+        return bounds.get(par, (-np.inf, np.inf))
+
+    if isinstance(bounds, (list, tuple)):
+        if idx < len(bounds):
+            return bounds[idx]
+
+    return -np.inf, np.inf
+
+
+# ------------------------------------------------------------
+# Internal helper: build lmfit parameter tuples
+# ------------------------------------------------------------
+
+def _make_lmfit_params_data(args, kwargs):
+    """
+    Construct lmfit-style parameter tuples.
+
+    Priority
+    --------
+
+    1. Positional lmfit tuples:
+
+            (g, 8, 15, True)
+            (g, 8, 15, 9.8, True)
+
+    2. Keyword fit_params:
+
+            fit_params=[(g, 8, 15, True)]
+
+    3. Sage-like parameters + optional initial_guess + optional bounds:
+
+            parameters=[g]
+            initial_guess=[9.8]
+            bounds={g: (8, 15)}
+    """
+
+    # ------------------------------------------------------------
+    # 1. Positional lmfit-style tuples
+    # ------------------------------------------------------------
+    if len(args) > 0:
+        if _looks_like_lmfit_params(args):
+            return tuple(args)
+
+        raise ValueError(
+            "For the lmfit extension, positional arguments after model "
+            "must be parameter tuples such as "
+            "(g, 8, 15, True) or (g, 8, 15, 9.8, True)."
+        )
+
+    # ------------------------------------------------------------
+    # 2. Explicit fit_params keyword
+    # ------------------------------------------------------------
+    if "fit_params" in kwargs:
+        fit_params = kwargs["fit_params"]
+
+        if not isinstance(fit_params, (list, tuple)):
+            raise TypeError("fit_params must be a list or tuple of parameter tuples.")
+
+        return tuple(fit_params)
+
+    # ------------------------------------------------------------
+    # 3. Build from parameters, initial_guess, bounds
+    # ------------------------------------------------------------
+    parameters = kwargs.get("parameters", None)
+
+    if parameters is None:
+        raise ValueError(
+            "For report='all' or type='ode', provide either lmfit-style "
+            "parameter tuples, fit_params=[...], or parameters=[...]."
+        )
+
+    if not isinstance(parameters, (list, tuple)):
+        parameters = [parameters]
+
+    initial_guess = kwargs.get("initial_guess", None)
+    bounds = kwargs.get("bounds", None)
+
+    params_data = []
+
+    for idx, par in enumerate(parameters):
+        par_min, par_max = _bounds_for_parameter(bounds, parameters, par, idx)
+        par_init = _value_from_initial_guess(initial_guess, parameters, par, idx)
+
+        if par_init is None:
+            params_data.append((par, par_min, par_max, True))
+        else:
+            params_data.append((par, par_min, par_max, par_init, True))
+
+    return tuple(params_data)
+
+
+# ------------------------------------------------------------
+# Internal helper: convert lmfit dictionary to Sage-like output
+# ------------------------------------------------------------
+
+def _fit_result_to_sage_output(fit, solution_dict=False):
+    """
+    Convert our lmfit result dictionary to Sage find_fit-like output.
+
+    If solution_dict=False:
+
+        [g == 9.81, k == 0.12]
+
+    If solution_dict=True:
+
+        {g: 9.81, k: 0.12}
+    """
+    pars = fit["params"]
+
+    if solution_dict:
+        return dict(pars)
+
+    return [p == val for p, val in pars.items()]
+
+
+# ------------------------------------------------------------
+# Internal helper: optionally suppress printed output
+# ------------------------------------------------------------
+
+def _silent_call(func, *args, silent=False, **kwargs):
+    """
+    Call a function with optional suppression of printed output.
+
+    lmfit_1ode and lmfit_fun print available dictionary keys.
+    For report='default' we suppress this to imitate Sage-like behavior.
+    """
+    if silent:
+        with contextlib.redirect_stdout(io.StringIO()):
+            return func(*args, **kwargs)
+
+    return func(*args, **kwargs)
+
+
+# ------------------------------------------------------------
+# Extended find_fit
+# ------------------------------------------------------------
+
+@wraps(_sage_find_fit_original)
+def find_fit(data, model, *args, type='formula', report='default', **kwargs):
+    """
+    Extended SageMath find_fit.
+
+    Default behavior is unchanged:
+
+        find_fit(data, model)
+
+    uses the original SageMath find_fit.
+
+    Added keyword parameters
+    ------------------------
+
+    type :
+        'formula'  - formula model; original SageMath behavior if report='default'
+        'ode'      - ODE model fitted by lmfit_1ode
+
+    report :
+        'default'  - Sage-like output
+        'all'      - full lmfit dictionary output
+    """
+
+    model_type = str(type).lower()
+    report_type = str(report).lower()
+
+    # ------------------------------------------------------------
+    # 1. Original SageMath behavior
+    # ------------------------------------------------------------
+    if model_type in ["formula", "sage", "standard"] and report_type in ["default", "sage"]:
+        return _sage_find_fit_original(data, model, *args, **kwargs)
+
+    # ------------------------------------------------------------
+    # 2. Formula model with detailed lmfit output
+    # ------------------------------------------------------------
+    if model_type in ["formula", "fun", "function", "explicit"]:
+        if report_type != "all":
+            raise ValueError(
+                "For type='formula', use report='default' for original SageMath "
+                "behavior or report='all' for detailed lmfit output."
+            )
+
+        params_data = _make_lmfit_params_data(args, kwargs)
+
+        fit = lmfit_fun(
+            model,
+            data,
+            *params_data
+        )
+
+        return fit
+
+    # ------------------------------------------------------------
+    # 3. ODE model fitted by lmfit_1ode
+    # ------------------------------------------------------------
+    if model_type in ["ode", "1ode", "odeint"]:
+
+        # --------------------------------------------------------
+        # Case A: model is packaged by ode_model(...)
+        # --------------------------------------------------------
+        if isinstance(model, dict) and model.get("_lab_model_type", None) == "ode":
+            ode_info = model
+
+            ode_rhs = ode_info["model"]
+            dvars = ode_info["dvars"]
+            ivar = ode_info["ivar"]
+            ics = ode_info["ics"]
+            fit_dvar = ode_info["fit_dvar"]
+            n = ode_info.get("n", 1)
+
+            packaged_params_data = tuple(ode_info.get("params_data", ()))
+
+            # Explicit parameters in find_fit(...) override packaged parameters.
+            if len(args) > 0 or "fit_params" in kwargs or "parameters" in kwargs:
+                params_data = _make_lmfit_params_data(args, kwargs)
+            else:
+                params_data = packaged_params_data
+
+            if len(params_data) == 0:
+                raise ValueError(
+                    "No fitted parameters were supplied. "
+                    "Use ode_model(..., (g, 8, 15, True)) "
+                    "or provide parameter tuples in find_fit(...)."
+                )
+
+        # --------------------------------------------------------
+        # Case B: direct ODE syntax without ode_model(...)
+        # --------------------------------------------------------
+        else:
+            required = ["dvars", "ivar", "ics", "fit_dvar"]
+
+            for key in required:
+                if key not in kwargs:
+                    raise ValueError(
+                        "For type='ode', either use ode_model(...), "
+                        "or provide " + key + "."
+                    )
+
+            ode_rhs = model
+            dvars = kwargs["dvars"]
+            ivar = kwargs["ivar"]
+            ics = kwargs["ics"]
+            fit_dvar = kwargs["fit_dvar"]
+            n = kwargs.get("n", 1)
+
+            params_data = _make_lmfit_params_data(args, kwargs)
+
+        solution_dict = kwargs.get("solution_dict", False)
+
+        fit = _silent_call(
+            lmfit_1ode,
+            ode_rhs,
+            dvars,
+            ivar,
+            ics,
+            n,
+            data,
+            fit_dvar,
+            *params_data,
+            silent=(report_type != "all")
+        )
+
+        if report_type == "all":
+            return fit
+
+        if report_type in ["default", "sage"]:
+            return _fit_result_to_sage_output(
+                fit,
+                solution_dict=solution_dict
+            )
+
+        raise ValueError(
+            "Unknown report option. Use report='default' or report='all'."
+        )
+
+    raise ValueError(
+        "Unknown type. Use type='formula' or type='ode'."
+    )
+
+
+# ------------------------------------------------------------
+# Extend documentation
+# ------------------------------------------------------------
+
+find_fit.__doc__ = (find_fit.__doc__ or "") + r"""
+
+Extension in labreport.sage
+---------------------------
+
+The original SageMath behavior is preserved:
+
+    find_fit(data, model)
+
+calls the original SageMath find_fit.
+
+New keyword parameters:
+
+    type='formula' or type='ode'
+    report='default' or report='all'
+
+Examples
+--------
+
+1. Original SageMath behavior:
+
+    find_fit(data, a + b*x, parameters=[a, b], variables=[x])
+
+2. Formula model with detailed lmfit output:
+
+    fit = find_fit(
+        data,
+        a + b*x,
+        report='all',
+        parameters=[a, b],
+        initial_guess=[0, 1],
+        bounds={a: (-10, 10), b: (-10, 10)}
+    )
+
+3. Formula model with lmfit-style parameter tuples:
+
+    fit = find_fit(
+        data,
+        a + b*x,
+        (a, -10, 10, 0, True),
+        (b, -10, 10, 1, True),
+        report='all'
+    )
+
+4. ODE model packaged by ode_model(...):
+
+    model_ode = ode_model(
+        model_y_odpor,
+        [y, v],
+        t,
+        ics,
+        y,
+        (g, 8, 15, True)
+    )
+
+    find_fit(
+        data,
+        model_ode,
+        type='ode'
+    )
+
+5. ODE model packaged by ode_model(...) with detailed lmfit output:
+
+    fit = find_fit(
+        data,
+        model_ode,
+        type='ode',
+        report='all'
+    )
+
+Then use:
+
+    fit["params"]
+    fit["stderr"]
+    fit["best_fit"]
+    fit["chisqr"]
+    print(fit["report"])
+
+For ODE fits with report='all', confidence bands can be computed by:
+
+    band95 = ode_confidence_band(fit, sigma=2)
+"""
