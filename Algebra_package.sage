@@ -4,7 +4,7 @@
 # |  Author: Jozef Hanc             |
 # +---------------------------------+
 
-print("Downloading the package...")
+print("Downloading the package Algebra...")
 import numpy as np
 
 from sympy.printing import latex as Latex
