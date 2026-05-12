@@ -717,6 +717,205 @@ def der(f,g):
     result = f.subs(g == gvar).diff(gvar).subs(gvar == g) 
     return result
 
+# ============================================================
+# Parciálna diferenciálna rovnica 2. rádu:
+#
+# 3*u_xx + 2*u_xy + 3*u_yy - 8*u_x + 2*u_y + 4*u = 0
+#
+# Cieľ:
+# 1. určiť typ PDE,
+# 2. odstrániť zmiešanú deriváciu pomocou lineárnej transformácie,
+# 3. odstrániť prvé derivácie substitúciou u = exp(a*r+b*s)*v,
+# 4. škálovaním dostať finálny kanonický tvar.
+#
+# Kód je čistý SageMath.
+# ============================================================
+
+
+# ------------------------------------------------------------
+# Pomocné funkcie
+# ------------------------------------------------------------
+
+def chain_rule_2D(old_fun, new_fun, old_vars, trans_funcs, trans_exprs, new_vars):
+    """
+    Automaticky vytvorí substitúcie reťazového pravidla do 2. rádu.
+
+    old_fun:
+        pôvodná závislá funkcia, napr. u(x,y)
+
+    new_fun:
+        tá istá závislá funkcia v nových premenných, napr. u(r,s)
+
+    old_vars:
+        pôvodné nezávislé premenné, napr. (x,y)
+
+    trans_funcs:
+        pomocné funkcie nových premenných závislé od pôvodných,
+        napr. (rho(x,y), sigma(x,y))
+
+    trans_exprs:
+        konkrétne transformačné vzťahy,
+        napr. ((x+y)/sqrt(2), (x-y)/sqrt(2))
+
+    new_vars:
+        nové nezávislé premenné, napr. (r,s)
+
+    Výstup:
+        zoznam substitúcií pre:
+        u,
+        u_x, u_y,
+        u_xx, u_yy, u_xy.
+    """
+
+    x, y = old_vars
+    Rfun, Sfun = trans_funcs
+    Rexpr, Sexpr = trans_exprs
+    r, s = new_vars
+
+    # zložená funkcia u(R(x,y), S(x,y))
+    composed = new_fun.subs(r == Rfun, s == Sfun)
+
+    # derivácie transformačných funkcií
+    trans_rules = []
+
+    derivs_trans = [
+        (x,), (y,),
+        (x, 2), (y, 2), (x, y)
+    ]
+
+    for F, Fexpr in zip(trans_funcs, trans_exprs):
+        for d in derivs_trans:
+            trans_rules.append(diff(F, *d) == diff(Fexpr, *d))
+
+    # po použití reťazového pravidla sa vrátime k symbolom nových premenných
+    back_to_new_vars = [
+        Rfun == r,
+        Sfun == s
+    ]
+
+    # pravidlá pre závislú funkciu a jej derivácie
+    rules = [
+        old_fun == new_fun
+    ]
+
+    derivs_u = [
+        (x,), (y,),
+        (x, 2), (y, 2), (x, y)
+    ]
+
+    for d in derivs_u:
+        lhs = diff(old_fun, *d)
+        rhs = diff(composed, *d).subs(trans_rules).subs(back_to_new_vars).expand()
+        rules.append(lhs == rhs)
+
+    return rules
+
+
+def dependent_substitution_2D(old_fun, new_expr, ivars):
+    """
+    Substitúcia závislej premennej do 2. rádu.
+
+    Napríklad:
+        u(r,s) = exp(a*r+b*s)*v(r,s)
+
+    Vytvorí substitúcie pre:
+        u,
+        u_r, u_s,
+        u_rr, u_ss, u_rs.
+    """
+
+    r, s = ivars
+
+    rules = [
+        old_fun == new_expr
+    ]
+
+    derivs = [
+        (r,), (s,),
+        (r, 2), (s, 2), (r, s)
+    ]
+
+    for d in derivs:
+        rules.append(diff(old_fun, *d) == diff(new_expr, *d).expand())
+
+    return rules
+
+
+def collect_in_derivatives(expr, fun, ivars):
+    """
+    Upraví výraz tak, aby bol čitateľnejší:
+    vyberie členy podľa derivácií funkcie.
+    """
+
+    r, s = ivars
+
+    expr2 = expr.expand()
+    expr2 = expr2.collect(diff(fun, r, 2))
+    expr2 = expr2.collect(diff(fun, s, 2))
+    expr2 = expr2.collect(diff(fun, r, s))
+    expr2 = expr2.collect(diff(fun, r))
+    expr2 = expr2.collect(diff(fun, s))
+    expr2 = expr2.collect(fun)
+
+    return expr2
+
+def make_pde2(coefs, ivars, fun_name='u', equation=False, rhs=0):
+    """
+    Vytvorí lineárnu PDE 2. rádu v dvoch premenných zo zoznamu koeficientov.
+
+    coefs:
+        [A, B, C, D, E, F]
+
+    Ak je zoznam kratší než 6, chýbajúce koeficienty sa doplnia nulami.
+
+    Príklady:
+        [3, 2, 3, -8, 2, 4]
+            -> 3*u_xx + 2*u_xy + 3*u_yy - 8*u_x + 2*u_y + 4*u
+
+        [3, 2, 3]
+            -> 3*u_xx + 2*u_xy + 3*u_yy
+
+        [3]
+            -> 3*u_xx
+
+    vars:
+        (x, y)
+
+    fun_name:
+        meno závislej funkcie, štandardne 'u'
+
+    equation:
+        False -> vráti ľavú stranu PDE
+        True  -> vráti rovnicu PDE == rhs
+
+    Výstup:
+        (PDE, u)
+    """
+
+    if len(coefs) > 6:
+        raise ValueError("Zoznam koeficientov môže mať najviac 6 prvkov: [A, B, C, D, E, F].")
+
+    coefs = list(coefs) + [0]*(6 - len(coefs))
+
+    A, B, C, D, E, F = [SR(c) for c in coefs]
+
+    x, y = ivars
+    u = function(fun_name)(x, y)
+
+    lhs = (
+        A*diff(u, x, 2)
+        + B*diff(u, x, y)
+        + C*diff(u, y, 2)
+        + D*diff(u, x)
+        + E*diff(u, y)
+        + F*u
+    ).expand()
+
+    if equation:
+        return lhs == rhs, u
+    else:
+        return lhs, u
+
 der2 = lambda f,u,v: der(der(f,u),v)
 
 
