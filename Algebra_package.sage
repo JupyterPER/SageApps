@@ -717,4 +717,7 @@ def der(f,g):
     result = f.subs(g == gvar).diff(gvar).subs(gvar == g) 
     return result
 
+der2 = lambda f,u,v: der(der(f,u),v)
+
+
 print('The package was successfully loaded!!!')  
