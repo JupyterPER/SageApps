@@ -1,4 +1,4 @@
-print("Downloading the animation package...")
+print("Downloading the package Animation...")
 
 from PIL import Image
 import os
