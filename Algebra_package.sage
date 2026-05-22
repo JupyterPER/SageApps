@@ -918,5 +918,575 @@ def make_pde2(coefs, ivars, fun_name='u', equation=False, rhs=0):
 
 der2 = lambda f,u,v: der(der(f,u),v)
 
+# ------------------------------------------------------------
+# Difference-equation sequences in SageMath
+# ------------------------------------------------------------
+#
+# This code defines a small helper tool for recursively generated
+# sequences written in a mathematical SageMath style.
+#
+# Instead of defining a sequence by a Python lambda function, for example
+#
+#     a = lambda n: a0 if n == 0 else a(n-1)/n
+#
+# we can write the recurrence as a symbolic difference equation:
+#
+#     a = sequence('a')
+#     a = desequence(a(n+1) == a(n)/(n+1), [a(0) == a0])
+#
+# The resulting object behaves like a sequence:
+#
+#     a(k)          returns the k-th term a_k
+#     a.list(N)     returns [a_0, ..., a_{N-1}]
+#     a.series(N)   returns a_0 + a_1*x + ... + a_{N-1}*x^(N-1)
+#
+# The tool also stores useful information:
+#
+#     a.values      computed sequence values
+#     a.initials    initial conditions
+#     a.equation    defining difference equation
+#
+# The purpose is not to solve recurrences in closed form, but to generate
+# terms recursively from explicit recurrence rules.
+# ------------------------------------------------------------
+
+
+def sequence(*args, **kwargs):
+    """
+    Create a symbolic placeholder for a sequence.
+
+    This is a semantic wrapper around SageMath's function(...).
+    It accepts the same positional and keyword arguments as function(...).
+
+    Example:
+        a = sequence('a')
+        eq = a(n+1) == a(n)/(n+1)
+    """
+    return function(*args, **kwargs)
+  
+class ShowableList(list):
+    """
+    A Python list with an additional .show() method.
+
+    Example:
+        seq.list(8).show()
+
+    is equivalent to:
+        show(seq.list(8))
+    """
+
+    def show(self):
+        return show(list(self))
+
+
+class ShowableDict(dict):
+    """
+    A Python dictionary with an additional .show() method.
+
+    Example:
+        seq.values.show()
+
+    is equivalent to:
+        show(seq.values)
+    """
+
+    def show(self):
+        return show(dict(self))
+
+
+def desequence(eq, ics):
+    """
+    Generate terms of a sequence from a SageMath difference equation.
+
+    This is meant as a discrete analogue of SageMath's desolve command,
+    but it generates sequence terms recursively rather than finding a
+    closed-form symbolic solution.
+
+    INPUT:
+
+        eq  -- a SageMath symbolic equation, for example
+
+                   a(n+1) == a(n)/(n+1)
+
+               or
+
+                   a(n+2) == a(n+1) + a(n)
+
+        ics -- initial conditions. Several forms are allowed:
+
+               Sage-style list of equations:
+
+                   [a(0) == C]
+                   [a(0) == 0, a(1) == 1]
+
+               Dictionary with symbolic sequence values as keys:
+
+                   {a(0): C}
+                   {a(0): 0, a(1): 1}
+
+               Dictionary with integer indices as keys:
+
+                   {0: C}
+                   {0: 0, 1: 1}
+
+    OUTPUT:
+
+        A function seq(k) returning a_k.
+
+        Additional useful commands:
+
+            seq.list(N)          first N terms: a_0, ..., a_{N-1}
+            seq.list(N).show()   show(seq.list(N))
+
+            seq.series(N)        finite power series in x
+            seq.series(N, y)     finite power series in y
+            seq.series(N).show() show(seq.series(N))
+
+            seq.values           dictionary of computed values
+            seq.values.show()    show(seq.values)
+
+            seq.equation         original difference equation
+            seq.equation.show()  show(seq.equation)
+
+            seq.initials         initial conditions
+            seq.initials.show()  show(seq.initials)
+
+    EXAMPLES:
+
+        var('n, C')
+        a = function('a')
+
+        eq = a(n+1) == a(n)/(n+1)
+        seq = desequence(eq, [a(0) == C])
+        seq.list(8)
+
+        # Output:
+        # [C, C, 1/2*C, 1/6*C, 1/24*C, 1/120*C, 1/720*C, 1/5040*C]
+
+    Fibonacci example:
+
+        var('n')
+        a = function('a')
+
+        eq = a(n+2) == a(n+1) + a(n)
+        fib = desequence(eq, [a(0) == 0, a(1) == 1])
+        fib.list(10)
+
+        # Output:
+        # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+    """
+
+    lhs = eq.lhs()
+    rhs = eq.rhs()
+
+    # Example:
+    #     lhs = a(n+1)
+    #     sequence_function = a
+    #     lhs_index = n+1
+    sequence_function = lhs.operator()
+    lhs_operands = lhs.operands()
+
+    if len(lhs_operands) != 1:
+        raise ValueError("The left-hand side must have the form a(index), for example a(n) or a(n+1).")
+
+    lhs_index = lhs_operands[0]
+
+    # Find the symbolic index variable, usually n.
+    index_variables = list(lhs_index.variables())
+
+    if len(index_variables) != 1:
+        raise ValueError("The index on the left-hand side must contain exactly one variable, for example n or n+1.")
+
+    index_variable = index_variables[0]
+
+    # Convert initial conditions to the internal form
+    #
+    #     {0: value_0, 1: value_1, ...}
+    #
+    # The user may write:
+    #
+    #     [a(0) == C, a(1) == D]
+    #     {a(0): C, a(1): D}
+    #     {0: C, 1: D}
+    values = ShowableDict()
+
+    def add_initial_condition(key, value):
+        """
+        Add one initial condition to the internal dictionary values.
+
+        Accepted key forms:
+            a(k)      symbolic sequence value
+            k         integer index
+        """
+
+        if hasattr(key, 'operator') and key.operator() == sequence_function:
+            key_operands = key.operands()
+
+            if len(key_operands) != 1:
+                raise ValueError("Each initial condition must have the form a(k) == value.")
+
+            index = key_operands[0]
+            values[ZZ(index)] = value
+
+        else:
+            values[ZZ(key)] = value
+
+    if isinstance(ics, dict):
+        for key, value in ics.items():
+            add_initial_condition(key, value)
+
+    elif isinstance(ics, (list, tuple)):
+        for condition in ics:
+            if not hasattr(condition, 'lhs') or not hasattr(condition, 'rhs'):
+                raise ValueError("List initial conditions must be equations, for example [a(0) == C].")
+
+            add_initial_condition(condition.lhs(), condition.rhs())
+
+    else:
+        raise TypeError("Initial conditions must be a dictionary or a list/tuple of equations.")
+
+    initial_values = ShowableDict(values)
+
+    def solve_for_index(k):
+        """
+        Find the value of the symbolic index variable needed to compute a_k.
+
+        Example:
+            lhs is a(n+1)
+            to compute a_k, solve n+1 == k, hence n = k-1.
+        """
+
+        sol = solve(lhs_index == k, index_variable)
+
+        if len(sol) != 1:
+            raise ValueError("Could not uniquely solve the left-hand index for the recurrence variable.")
+
+        return sol[0].rhs()
+
+    def contains_sequence_function(expr):
+        """
+        Test whether expr still contains a symbolic occurrence of the
+        sequence function, for example a(3) or a(k).
+
+        Sage symbolic expressions do not have an .operators() method.
+        Therefore we walk through the expression tree using .operator()
+        and .operands().
+        """
+
+        try:
+            op = expr.operator()
+        except (AttributeError, TypeError, ValueError):
+            return False
+
+        if op == sequence_function:
+            return True
+
+        try:
+            operands = expr.operands()
+        except (AttributeError, TypeError, ValueError):
+            return False
+
+        return any(contains_sequence_function(operand) for operand in operands)
+
+    def term(k):
+        k = ZZ(k)
+
+        if k < 0:
+            raise ValueError("The sequence index must be nonnegative.")
+
+        if k in values:
+            return values[k]
+
+        # Compute all previous terms first.
+        for j in range(k):
+            term(j)
+
+        # Determine which value of n produces the left-hand side a(k).
+        n_value = solve_for_index(k)
+
+        # Substitute this value into the right-hand side.
+        expr = rhs.subs({index_variable: n_value})
+
+        # Replace a(0), a(1), ..., a(k-1) by their already computed values.
+        for j in range(k):
+            expr = expr.subs({sequence_function(j): values[j]})
+
+        # If the expression still contains the sequence function, then the rule
+        # was not explicit enough to compute a_k from previous terms only.
+        if contains_sequence_function(expr):
+            raise ValueError("The recurrence is not explicit in previously computed terms only.")
+
+        values[k] = expr.simplify_full()
+        return values[k]
+
+    def list_terms(N):
+        N = ZZ(N)
+
+        if N < 0:
+            raise ValueError("N must be nonnegative.")
+
+        return ShowableList([term(k) for k in range(N)])
+
+    def series_terms(N, variable=None):
+        """
+        Return the finite power series
+
+            a_0 + a_1*x + ... + a_{N-1}*x^(N-1)
+
+        By default, the variable is x.
+
+        Examples:
+            seq.series(8)       series in x
+            seq.series(8, y)    series in y
+            seq.series(8, 'y')  also allowed
+        """
+
+        N = ZZ(N)
+
+        if N < 0:
+            raise ValueError("N must be nonnegative.")
+
+        if variable is None:
+            variable = SR.var('x')
+
+        if isinstance(variable, str):
+            variable = SR.var(variable)
+
+        return sum((term(k)*variable**k for k in range(N)), SR(0))
+
+    term.list = list_terms
+    term.series = series_terms
+    term.values = values
+    term.equation = eq
+    term.initials = initial_values
+
+    return term
+
+
+# ------------------------------------------------------------
+# EXAMPLES
+# ------------------------------------------------------------
+#
+# The examples below are comments only.
+# To run an example, copy it into a SageMath input cell without
+# the leading comment symbols #.
+#
+# ------------------------------------------------------------
+# Example 1: factorial-type recurrence
+# ------------------------------------------------------------
+#
+# Mathematical recurrence:
+#
+#     a_{n+1} = a_n/(n+1),     a_0 = C
+#
+# SageMath code:
+#
+#     var('n, C')
+#     a = function('a')
+#
+#     eq = a(n+1) == a(n)/(n+1)
+#     seq = desequence(eq, [a(0) == C])
+#
+#     seq.list(8)
+#
+# Expected output:
+#
+#     [C, C, 1/2*C, 1/6*C, 1/24*C, 1/120*C, 1/720*C, 1/5040*C]
+#
+# ------------------------------------------------------------
+# Example 2: the same recurrence with dictionary initial condition
+# ------------------------------------------------------------
+#
+#     var('n, C')
+#     a = function('a')
+#
+#     eq = a(n+1) == a(n)/(n+1)
+#     seq = desequence(eq, {a(0): C})
+#
+#     seq.list(8)
+#
+# Expected output:
+#
+#     [C, C, 1/2*C, 1/6*C, 1/24*C, 1/120*C, 1/720*C, 1/5040*C]
+#
+# ------------------------------------------------------------
+# Example 3: the same recurrence with integer-index dictionary
+# ------------------------------------------------------------
+#
+#     var('n, C')
+#     a = function('a')
+#
+#     eq = a(n+1) == a(n)/(n+1)
+#     seq = desequence(eq, {0: C})
+#
+#     seq.list(8)
+#
+# Expected output:
+#
+#     [C, C, 1/2*C, 1/6*C, 1/24*C, 1/120*C, 1/720*C, 1/5040*C]
+#
+# ------------------------------------------------------------
+# Example 4: Fibonacci sequence
+# ------------------------------------------------------------
+#
+# Mathematical recurrence:
+#
+#     a_{n+2} = a_{n+1} + a_n,     a_0 = 0, a_1 = 1
+#
+# SageMath code:
+#
+#     var('n')
+#     a = function('a')
+#
+#     eq = a(n+2) == a(n+1) + a(n)
+#     fib = desequence(eq, [a(0) == 0, a(1) == 1])
+#
+#     fib.list(10)
+#
+# Expected output:
+#
+#     [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+#
+# ------------------------------------------------------------
+# Example 5: arithmetic sequence
+# ------------------------------------------------------------
+#
+# Mathematical recurrence:
+#
+#     a_{n+1} = a_n + d,     a_0 = A
+#
+# SageMath code:
+#
+#     var('n, A, d')
+#     a = function('a')
+#
+#     eq = a(n+1) == a(n) + d
+#     seq = desequence(eq, [a(0) == A])
+#
+#     seq.list(6)
+#
+# Expected output:
+#
+#     [A, A + d, A + 2*d, A + 3*d, A + 4*d, A + 5*d]
+#
+# ------------------------------------------------------------
+# Example 6: geometric sequence
+# ------------------------------------------------------------
+#
+# Mathematical recurrence:
+#
+#     a_{n+1} = r a_n,     a_0 = A
+#
+# SageMath code:
+#
+#     var('n, A, r')
+#     a = function('a')
+#
+#     eq = a(n+1) == r*a(n)
+#     seq = desequence(eq, [a(0) == A])
+#
+#     seq.list(6)
+#
+# Expected output:
+#
+#     [A, A*r, A*r^2, A*r^3, A*r^4, A*r^5]
+#
+# ------------------------------------------------------------
+# Example 7: constant sequence after the initial value
+# ------------------------------------------------------------
+#
+# Mathematical recurrence:
+#
+#     a_{n+1} = 5,     a_0 = C
+#
+# SageMath code:
+#
+#     var('n, C')
+#     a = function('a')
+#
+#     eq = a(n+1) == 5
+#     seq = desequence(eq, [a(0) == C])
+#
+#     seq.list(8)
+#
+# Expected output:
+#
+#     [C, 5, 5, 5, 5, 5, 5, 5]
+#
+# Note:
+#
+#     This is different from eq = a(n) == 5 together with a(0) == C.
+#     The equation a(n) == 5 also includes n = 0 unless we explicitly
+#     restrict the range of n. Therefore it conflicts with a(0) == C
+#     unless C = 5.
+#
+# ------------------------------------------------------------
+# Example 8: second-order recurrence
+# ------------------------------------------------------------
+#
+# Mathematical recurrence:
+#
+#     a_{n+2} = 3 a_{n+1} - 2 a_n,     a_0 = A, a_1 = B
+#
+# SageMath code:
+#
+#     var('n, A, B')
+#     a = function('a')
+#
+#     eq = a(n+2) == 3*a(n+1) - 2*a(n)
+#     seq = desequence(eq, [a(0) == A, a(1) == B])
+#
+#     seq.list(6)
+#
+# Expected output:
+#
+#     [A, B, -2*A + 3*B, -6*A + 7*B, -14*A + 15*B, -30*A + 31*B]
+#
+# ------------------------------------------------------------
+# Example 9: inspecting the generated sequence object
+# ------------------------------------------------------------
+#
+#     var('n, C')
+#     a = function('a')
+#
+#     eq = a(n+1) == a(n)/(n+1)
+#     seq = desequence(eq, [a(0) == C])
+#
+#     seq(5)                 # returns a_5
+#     seq.list(8)            # returns [a_0, ..., a_7]
+#     seq.series(8)          # returns a_0 + a_1*x + ... + a_7*x^7
+#     seq.series(8, y)       # returns a_0 + a_1*y + ... + a_7*y^7
+#     seq.values             # dictionary of already computed values
+#     seq.equation           # original difference equation
+#     seq.initials           # initial conditions in internal dictionary form
+#
+#     seq.list(8).show()     # same idea as show(seq.list(8))
+#     seq.series(8).show()   # same idea as show(seq.series(8))
+#     seq.values.show()      # same idea as show(seq.values)
+#     seq.equation.show()    # same idea as show(seq.equation)
+#     seq.initials.show()    # same idea as show(seq.initials)
+#
+# ------------------------------------------------------------
+# Example 10: constructing a finite power series
+# ------------------------------------------------------------
+#
+# Mathematical recurrence:
+#
+#     a_{n+1} = a_n/(n+1),     a_0 = a0
+#
+# SageMath code:
+#
+#     var('n, a0, x, y')
+#     a = sequence('a')
+#
+#     a = desequence(a(n+1) == a(n)/(n+1), [a(0) == a0])
+#
+#     a.series(8)       # finite series in x
+#     a.series(8, y)    # finite series in y
+#
+# Expected output for a.series(8):
+#
+#     1/5040*a0*x^7 + 1/720*a0*x^6 + 1/120*a0*x^5
+#     + 1/24*a0*x^4 + 1/6*a0*x^3 + 1/2*a0*x^2 + a0*x + a0
 
 print('The package was successfully loaded!!!')  
