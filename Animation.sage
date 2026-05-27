@@ -9,6 +9,58 @@ import base64
 from datetime import datetime
 import resource
 
+def load_cloud(url, filename):
+    """
+    Načíta Sage/Python súbor z cloudovej URL adresy.
+
+    Podporované:
+        - Dropbox
+        - OneDrive / SharePoint links of the form .../:u:/g/personal/.../SHARE_ID?e=...
+        - OneDrive Personal links of the form onedrive.live.com/embed?...
+        - other direct URLs
+
+    Parameters:
+        url (str): cloud URL
+        filename (str): názov súboru, napr. 'model_kyvadla.sage'
+    """
+
+    # Dropbox
+    if "dropbox.com" in url:
+        if "dl=0" in url:
+            url = url.replace("dl=0", "raw=1")
+        elif "dl=1" in url:
+            url = url.replace("dl=1", "raw=1")
+        elif "raw=1" not in url:
+            sep = "&" if "?" in url else "?"
+            url = url + sep + "raw=1"
+
+    # OneDrive / SharePoint, e.g.
+    # https://upjs-my.sharepoint.com/:u:/g/personal/jozef_hanc_upjs_sk/SHARE_ID?e=...
+    elif "sharepoint.com" in url and "/:u:/g/personal/" in url:
+        base = url.split("/:u:/g/")[0]
+        path = url.split("/:u:/g/")[1].split("?")[0]
+
+        parts = path.split("/")
+        personal_path = "/".join(parts[:2])   # personal/jozef_hanc_upjs_sk
+        share_id = parts[-1]
+
+        url = base + "/" + personal_path + "/_layouts/15/download.aspx?share=" + share_id
+
+    # OneDrive Personal
+    elif "onedrive.live.com" in url:
+        if "embed?" in url:
+            url = url.replace("embed?", "download?")
+        elif "redir?" in url:
+            url = url.replace("redir?", "download?")
+        elif "download?" not in url:
+            sep = "&" if "?" in url else "?"
+            url = url + sep + "download=1"
+
+    # Sage must visibly see .sage or .py at the end of the URL
+    url = url + "#" + filename
+
+    load(url)
+
 def generate_gif(frame_generator, num_frames, duration=100, 
                  show_progress=True, progress_step=10, loop=0, save=False, filename=None):
     """
