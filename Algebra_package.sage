@@ -29,6 +29,104 @@ def exact(x):
     except AttributeError:
         return exact_entry(x)
 
+def _copy_matrix(A):
+    """
+    Return a mutable copy of A.
+
+    The original matrix A is not changed by the row operations below.
+    """
+    return copy(A)
+
+
+def _check_row_index(A, i):
+    """
+    Check whether i is a valid row index of A.
+
+    Indexing is 0-based:
+        0, 1, ..., A.nrows() - 1
+    """
+    if not (0 <= i < A.nrows()):
+        raise IndexError("Row index out of range.")
+
+
+def _check_two_row_indices(A, i, j):
+    """
+    Check whether i and j are valid row indices of A.
+    """
+    _check_row_index(A, i)
+    _check_row_index(A, j)
+
+
+def rescale_row(A, i, a):
+    """
+    Return a new matrix obtained from A by multiplying row i by a.
+
+    Operation:
+        row_i <- a * row_i
+
+    The original matrix A is not changed.
+    """
+    _check_row_index(A, i)
+
+    B = _copy_matrix(A)
+    B.rescale_row(i, a)
+
+    return B
+
+
+def add_multiple_of_row(A, i, j, a):
+    """
+    Return a new matrix obtained from A by adding a multiple of row j to row i.
+
+    Operation:
+        row_i <- row_i + a * row_j
+
+    The original matrix A is not changed.
+    """
+    _check_two_row_indices(A, i, j)
+
+    B = _copy_matrix(A)
+    B.add_multiple_of_row(i, j, a)
+
+    return B
+
+
+def swap_rows(A, i, j):
+    """
+    Return a new matrix obtained from A by swapping rows i and j.
+
+    Operation:
+        row_i <-> row_j
+
+    The original matrix A is not changed.
+    """
+    _check_two_row_indices(A, i, j)
+
+    B = _copy_matrix(A)
+    B.swap_rows(i, j)
+
+    return B
+
+
+def set_row(A, i, u):
+    """
+    Return a new matrix obtained from A by replacing row i by the vector u.
+
+    Operation:
+        row_i <- u
+
+    The original matrix A is not changed.
+    """
+    _check_row_index(A, i)
+
+    if len(u) != A.ncols():
+        raise ValueError("The new row must have length equal to the number of columns of A.")
+
+    B = _copy_matrix(A)
+    B.set_row(i, vector(A.base_ring(), u))
+
+    return B
+
 # definition of Levi-Civita symbol
 eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
 
