@@ -11,6 +11,24 @@ from sympy.printing import latex as Latex
 from IPython.display import Math 
 import re
 
+def exact(x):
+    def exact_entry(a):
+        try:
+            return a.exactify().radical_expression()
+        except Exception:
+            try:
+                return a.radical_expression()
+            except Exception:
+                try:
+                    return QQ(a)
+                except Exception:
+                    return a
+
+    try:
+        return x.apply_map(exact_entry)
+    except AttributeError:
+        return exact_entry(x)
+
 # definition of Levi-Civita symbol
 eps = lambda p: sign(prod(p[j] - p[i] for i in range(len(p)) for j in range(i+1, len(p))))
 
