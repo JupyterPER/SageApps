@@ -158,21 +158,277 @@ def smatrix(name, m, n=1):
     return matrix(SR, m, n, lambda i, j: var(f"{name}{i}{j}"))
 
 
-from sage.all import matrix as sage_matrix, vector as sage_vector, SR, var
-from sage.misc.functional import norm as sage_norm
+#from sage.all import matrix as sage_matrix, vector as sage_vector, SR, var
+#from sage.misc.functional import norm as sage_norm
 
 from functools import wraps
 
-#def Norm(v):
-#    # Convert input to a matrix to ensure .T exists
-#    M = matrix(v)
-#    # For a row vector v, M.T * M gives a square matrix 
-#    # For a column vector v, M * M.T gives the square of the norm in the trace
-#    # However, to be mathematically consistent with complex matrices and vector:
-#    return (M.H * M).trace().sqrt()
+from sage.all import (
+    matrix as sage_matrix,
+    vector as sage_vector,
+    SR,
+    var,
+    show,
+    latex,
+    oo,
+    Infinity,
+    I,
+)
 
-from functools import wraps
 from sage.misc.functional import norm as sage_norm
+from sage.matrix.matrix0 import Matrix
+from sage.modules.free_module_element import FreeModuleElement
+
+
+# ============================================================
+# Showable proxy
+# ============================================================
+
+class Showable:
+    """
+    Lightweight proxy around a Sage matrix or vector.
+
+    Purpose:
+        A.show() means show(A)
+        A.chop() means chop(A)
+
+    The original Sage object is stored in A._obj
+    and can be recovered by A.unwrap().
+    """
+
+    def __init__(self, obj):
+        self._obj = obj
+
+    def show(self, *args, **kwargs):
+        return show(self._obj, *args, **kwargs)
+
+    def chop(self, eps=1e-10):
+        return chop(self._obj, eps=eps)
+
+    def unwrap(self):
+        return self._obj
+
+    def __repr__(self):
+        return repr(self._obj)
+
+    def _repr_(self):
+        return self._obj._repr_()
+
+    def _latex_(self):
+        return latex(self._obj)
+
+    def __getattr__(self, name):
+        attr = getattr(self._obj, name)
+
+        if callable(attr):
+            def wrapped_method(*args, **kwargs):
+                args = tuple(_unwrap(a) for a in args)
+                kwargs = {k: _unwrap(v) for k, v in kwargs.items()}
+                return _showable(attr(*args, **kwargs))
+            return wrapped_method
+
+        return _showable(attr)
+
+    def __getitem__(self, key):
+        return _showable(self._obj[key])
+
+    def __setitem__(self, key, value):
+        self._obj[key] = _unwrap(value)
+
+    def __iter__(self):
+        return iter(self._obj)
+
+    def __len__(self):
+        return len(self._obj)
+
+    def __eq__(self, other):
+        return self._obj == _unwrap(other)
+
+    def __ne__(self, other):
+        return self._obj != _unwrap(other)
+
+    def __add__(self, other):
+        return _showable(self._obj + _unwrap(other))
+
+    def __radd__(self, other):
+        return _showable(_unwrap(other) + self._obj)
+
+    def __sub__(self, other):
+        return _showable(self._obj - _unwrap(other))
+
+    def __rsub__(self, other):
+        return _showable(_unwrap(other) - self._obj)
+
+    def __mul__(self, other):
+        return _showable(self._obj * _unwrap(other))
+
+    def __rmul__(self, other):
+        return _showable(_unwrap(other) * self._obj)
+
+    def __truediv__(self, other):
+        return _showable(self._obj / _unwrap(other))
+
+    def __neg__(self):
+        return _showable(-self._obj)
+
+    def __pow__(self, n):
+        return _showable(self._obj ** _unwrap(n))
+
+    def __xor__(self, n):
+        # Useful in Sage notebooks where ^ is often used for powers.
+        return _showable(self._obj ** _unwrap(n))
+
+    @property
+    def T(self):
+        return _showable(self._obj.T)
+
+    @property
+    def H(self):
+        return _showable(self._obj.H)
+
+
+def _unwrap(x):
+    """
+    Return the genuine Sage object if x is Showable.
+    Otherwise return x unchanged.
+    """
+    if isinstance(x, Showable):
+        return x._obj
+    return x
+
+
+def _showable(x):
+    """
+    Wrap Sage matrices and vectors into Showable.
+    Leave scalars and other objects unchanged.
+    """
+    if isinstance(x, Showable):
+        return x
+
+    if isinstance(x, (Matrix, FreeModuleElement)):
+        return Showable(x)
+
+    if isinstance(x, list):
+        return [_showable(a) for a in x]
+
+    if isinstance(x, tuple):
+        return tuple(_showable(a) for a in x)
+
+    return x
+
+
+# ============================================================
+# Chop small numerical real/imaginary parts
+# ============================================================
+
+def _part(x, name):
+    """
+    Return x.real or x.imag.
+
+    Supports both:
+        Sage style:   x.real(), x.imag()
+        Python style: x.real,   x.imag
+    """
+    a = getattr(x, name)
+    return a() if callable(a) else a
+
+
+def _is_zero(x):
+    """
+    Safely test whether x == 0.
+    If the test cannot be decided, return False.
+    """
+    try:
+        return bool(x == 0)
+    except Exception:
+        return False
+
+
+def _chop_entry(x, eps=1e-10):
+    """
+    Chop small real and imaginary parts of a scalar.
+
+    Works for:
+        - Sage real/complex numbers
+        - Sage symbolic expressions when the comparison is decidable
+        - Python real/complex numbers
+
+    Examples:
+        1e-12              -> 0
+        1 + 1e-12*I        -> 1
+        1e-12 + 2*I        -> 2*I
+        complex(1e-12, 2)  -> 2j
+    """
+
+    try:
+        re = _part(x, "real")
+        im = _part(x, "imag")
+
+        try:
+            if abs(re) < eps:
+                re = 0
+        except Exception:
+            pass
+
+        try:
+            if abs(im) < eps:
+                im = 0
+        except Exception:
+            pass
+
+        if _is_zero(im):
+            return re
+
+        if isinstance(x, complex):
+            return complex(re, im)
+
+        return re + im*I
+
+    except Exception:
+        try:
+            if abs(x) < eps:
+                return 0
+        except Exception:
+            pass
+
+        return x
+
+
+def chop(A, eps=1e-10):
+    """
+    Chop small numerical real/imaginary parts in a scalar, vector, or matrix.
+
+    Works with:
+        chop(scalar)
+        chop(vector)
+        chop(matrix)
+
+    Also works with Showable objects:
+        A.chop()
+        v.chop()
+    """
+
+    A = _unwrap(A)
+
+    # Matrix case
+    if isinstance(A, Matrix):
+        R = A.base_ring()
+        entries = [_chop_entry(x, eps=eps) for x in A.list()]
+        return _showable(sage_matrix(R, A.nrows(), A.ncols(), entries))
+
+    # Vector case
+    if isinstance(A, FreeModuleElement):
+        R = A.base_ring()
+        entries = [_chop_entry(x, eps=eps) for x in list(A)]
+        return _showable(sage_vector(R, entries))
+
+    # Scalar case
+    return _chop_entry(A, eps=eps)
+
+
+# ============================================================
+# Extended norm
+# ============================================================
 
 @wraps(sage_norm)
 def norm(x, p=None):
@@ -188,10 +444,12 @@ def norm(x, p=None):
     - for non-matrices, delegate to Sage's original norm(x).
     """
 
+    x = _unwrap(x)
+
     is_matrix = (
-        hasattr(x, 'nrows') and
-        hasattr(x, 'ncols') and
-        hasattr(x, 'H')
+        hasattr(x, "nrows") and
+        hasattr(x, "ncols") and
+        hasattr(x, "H")
     )
 
     if not is_matrix:
@@ -211,8 +469,8 @@ def norm(x, p=None):
             return ((x.H * x).trace()).sqrt()
         return sage_norm(x)
 
-    # Exact Frobenius for matrices
-    if p == 'frob':
+    # Exact Frobenius norm for matrices
+    if p == "frob":
         return ((x.H * x).trace()).sqrt()
 
     # Usual Sage matrix norms
@@ -220,6 +478,11 @@ def norm(x, p=None):
         return x.norm(p)
 
     raise ValueError("for matrices, p must be one of 1, 2, oo, Infinity, 'frob'")
+
+
+# ============================================================
+# Extended matrix constructor
+# ============================================================
 
 @wraps(sage_matrix)
 def matrix(*args, **kwargs):
@@ -235,26 +498,28 @@ def matrix(*args, **kwargs):
         if m < 0 or n < 0:
             raise ValueError("In matrix(SR, m, n, name, ...), require m >= 0 and n >= 0.")
 
-        indexing = kwargs.pop('indexing', 'python')
-        if indexing not in ('python', 'natural'):
+        indexing = kwargs.pop("indexing", "python")
+        if indexing not in ("python", "natural"):
             raise ValueError("indexing must be 'python' or 'natural'.")
 
-        shift = 0 if indexing == 'python' else 1
-        base_latex = kwargs.pop('latex_name', None)
+        shift = 0 if indexing == "python" else 1
+        base_latex = kwargs.pop("latex_name", None)
 
         def make_var(i, j):
             ii, jj = i + shift, j + shift
+
             if base_latex is None:
                 return var(f"{name}{ii}{jj}", **kwargs)
+
             return var(
                 f"{name}{ii}{jj}",
                 latex_name=f"{base_latex}_{{{ii}{jj}}}",
                 **kwargs
             )
 
-        return sage_matrix(m, n, lambda i, j: make_var(i, j))
+        return _showable(sage_matrix(m, n, lambda i, j: make_var(i, j)))
 
-    return sage_matrix(*args, **kwargs)
+    return _showable(sage_matrix(*args, **kwargs))
 
 
 matrix.__doc__ = (matrix.__doc__ or "") + r"""
@@ -267,28 +532,30 @@ Parameters for the extension:
     name (str): Base name for the variables.
     m (int): Number of rows.
     n (int): Number of columns.
-    indexing (str, optional): 'natural' for indexing from 1, or
-        'python' for indexing from 0. Default is 'natural'.
-    **kwargs: Passed to var(...), e.g. domain='real', latex_name=r'\alpha'.
+    indexing (str, optional): 'python' for indexing from 0, or
+        'natural' for indexing from 1. Default is 'python'.
+    latex_name (str, optional): Base LaTeX name, e.g. r'\alpha'.
+    **kwargs: Passed to var(...), e.g. domain='real'.
 
 Returns for the extension:
-    matrix: An m x n symbolic matrix with entries name{i}{j}.
+    Showable matrix: A wrapped Sage matrix with entries name{i}{j}.
 
-Example:
-    matrix(SR, m, n, 'a') returns the symbolic matrix
-    [a11 a12 ...;
-     a21 a22 ...;
-     ...         ].
+Examples:
+    matrix(SR, m, n, 'a') returns entries
+    a00, a01, ...
 
-    matrix(SR, m, n, 'a', indexing='python') returns
-    [a00 a01 ...;
-     a10 a11 ...;
-     ...         ].
+    matrix(SR, m, n, 'a', indexing='natural') returns entries
+    a11, a12, ...
 
-    matrix(SR, m, n, 'a', latex_name=r'\alpha') uses LaTeX names
+    matrix(SR, m, n, 'a', indexing='natural', latex_name=r'\alpha')
+    uses LaTeX names
     \alpha_{11}, \alpha_{12}, ...
 """
 
+
+# ============================================================
+# Extended vector constructor
+# ============================================================
 
 @wraps(sage_vector)
 def vector(*args, **kwargs):
@@ -303,26 +570,28 @@ def vector(*args, **kwargs):
         if n < 0:
             raise ValueError("In vector(SR, n, name, ...), require n >= 0.")
 
-        indexing = kwargs.pop('indexing', 'python')
-        if indexing not in ('python', 'natural'):
+        indexing = kwargs.pop("indexing", "python")
+        if indexing not in ("python", "natural"):
             raise ValueError("indexing must be 'python' or 'natural'.")
 
-        shift = 0 if indexing == 'python' else 1
-        base_latex = kwargs.pop('latex_name', None)
+        shift = 0 if indexing == "python" else 1
+        base_latex = kwargs.pop("latex_name", None)
 
         def make_var(i):
             ii = i + shift
+
             if base_latex is None:
                 return var(f"{name}{ii}", **kwargs)
+
             return var(
                 f"{name}{ii}",
                 latex_name=f"{base_latex}_{{{ii}}}",
                 **kwargs
             )
 
-        return sage_vector([make_var(i) for i in range(n)])
+        return _showable(sage_vector([make_var(i) for i in range(n)]))
 
-    return sage_vector(*args, **kwargs)
+    return _showable(sage_vector(*args, **kwargs))
 
 
 vector.__doc__ = (vector.__doc__ or "") + r"""
@@ -334,34 +603,36 @@ Extension:
 Parameters for the extension:
     name (str): Base name for the variables.
     n (int): Length of the vector.
-    indexing (str, optional): 'natural' for indexing from 1, or
-        'python' for indexing from 0. Default is 'natural'.
-    **kwargs: Passed to var(...), e.g. domain='real', latex_name=r'\alpha'.
+    indexing (str, optional): 'python' for indexing from 0, or
+        'natural' for indexing from 1. Default is 'python'.
+    latex_name (str, optional): Base LaTeX name, e.g. r'\alpha'.
+    **kwargs: Passed to var(...), e.g. domain='real'.
 
 Returns for the extension:
-    vector: A symbolic vector with entries name1, name2, ..., namen,
-    or name0, name1, ..., name(n-1) if indexing='python'.
+    Showable vector: A wrapped Sage vector with entries name0, name1, ...
+    or name1, name2, ... if indexing='natural'.
 
-Example:
-    vector(SR, n, 'a') returns the symbolic vector
-    (a1, a2, ..., an).
-
-    vector(SR, n, 'a', indexing='python') returns
+Examples:
+    vector(SR, n, 'a') returns
     (a0, a1, ..., a(n-1)).
 
-    vector(SR, n, 'a', latex_name=r'\alpha') uses LaTeX names
+    vector(SR, n, 'a', indexing='natural') returns
+    (a1, a2, ..., an).
+
+    vector(SR, n, 'a', indexing='natural', latex_name=r'\alpha')
+    uses LaTeX names
     \alpha_1, \alpha_2, ...
 """
 
-def chop(A, eps=1e-10):
-    R = A.base_ring()
-
-    def chop_entry(x):
-        re = 0 if abs(x.real()) < eps else x.real()
-        im = 0 if abs(x.imag()) < eps else x.imag()
-        return re if im == 0 else re + im*I
-
-    return matrix(R, A.nrows(), A.ncols(), map(chop_entry, A.list()))
+#def chop(A, eps=1e-10):
+#    R = A.base_ring()
+#
+#    def chop_entry(x):
+#        re = 0 if abs(x.real()) < eps else x.real()
+#        im = 0 if abs(x.imag()) < eps else x.imag()
+#        return re if im == 0 else re + im*I
+#
+#    return matrix(R, A.nrows(), A.ncols(), map(chop_entry, A.list()))
 
 def singularvalues(A, exact=True, digits=None, sort=True):
     if exact:
