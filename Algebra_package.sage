@@ -11,6 +11,8 @@ from sympy.printing import latex as Latex
 from IPython.display import Math 
 import re
 
+spfun = lambda f,A: A.apply_map(lambda x: 0 if x.is_zero() else f(x))
+
 def exact(x):
     def exact_entry(a):
         try:
