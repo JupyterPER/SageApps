@@ -928,6 +928,107 @@ def Show_latex(expr, notation='auto', partial=None, collect_derivatives=True, co
     else:
         return latex_str
 
+# ----Show Sage plots in Plotly----
+
+import numpy as np
+import plotly.graph_objects as go
+from matplotlib.collections import LineCollection, PathCollection
+
+
+def sage_to_plotly_html(G, title=None):
+    """
+    Convert a Sage Graphics object to an interactive Plotly figure
+    by going through its matplotlib() representation.
+    """
+    mpl_fig = G.matplotlib()
+    ax = mpl_fig.axes[0]
+    traces = []
+
+    # 1. Line2D objects (from line(), plot(), point() with markers, etc.)
+    for ln in ax.get_lines():
+        xd, yd = ln.get_xdata(), ln.get_ydata()
+        # decide line vs marker mode
+        has_line = ln.get_linestyle() not in ('None', '', ' ', None) \
+                   and ln.get_linewidth() > 0
+        has_marker = ln.get_marker() not in ('None', '', ' ', None)
+        mode = 'lines' if has_line and not has_marker else \
+               'markers' if has_marker and not has_line else 'lines+markers'
+
+        color = ln.get_color()
+        traces.append(go.Scatter(
+            x=np.asarray(xd, dtype=float),
+            y=np.asarray(yd, dtype=float),
+            mode=mode,
+            name=ln.get_label() if not ln.get_label().startswith('_') else None,
+            line=dict(width=ln.get_linewidth()),
+            opacity=ln.get_alpha() if ln.get_alpha() is not None else 1.0,
+        ))
+
+    # 2. LineCollections (e.g. many line() pieces, vector fields)
+    for coll in ax.collections:
+        if isinstance(coll, LineCollection):
+            for seg in coll.get_segments():
+                seg = np.asarray(seg, dtype=float)
+                traces.append(go.Scatter(
+                    x=seg[:, 0], y=seg[:, 1],
+                    mode='lines', showlegend=False,
+                ))
+        elif isinstance(coll, PathCollection):  # scatter_plot, point()
+            offs = np.asarray(coll.get_offsets(), dtype=float)
+            if offs.size:
+                traces.append(go.Scatter(
+                    x=offs[:, 0], y=offs[:, 1],
+                    mode='markers', showlegend=False,
+                ))
+
+    # 3. Polygons / patches (polygon(), disk(), bar_chart() bars)
+    for patch in ax.patches:
+        try:
+            verts = patch.get_path().vertices
+            tr = patch.get_patch_transform()
+            verts = tr.transform(verts)
+            verts = patch.get_data_transform().inverted().transform(
+                patch.get_transform().transform(patch.get_path().vertices))
+        except Exception:
+            verts = patch.get_verts()
+        verts = np.asarray(verts, dtype=float)
+        traces.append(go.Scatter(
+            x=verts[:, 0], y=verts[:, 1],
+            mode='lines', fill='toself', showlegend=False,
+        ))
+
+    fig = go.Figure(data=traces)
+
+    # carry over axis ranges and labels from the matplotlib axes
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    fig.update_layout(
+        title=title,
+        xaxis=dict(title=ax.get_xlabel() or None, range=list(xlim)),
+        yaxis=dict(title=ax.get_ylabel() or None, range=list(ylim)),
+        template='plotly_white',
+    )
+
+    if title is None:
+        title = getattr(G, '_extra_kwds', {}).get('title')
+    
+    # respect Sage's aspect_ratio() if it was set to a number
+    ar = G.aspect_ratio()
+    if ar != 'automatic':
+        fig.update_yaxes(scaleanchor='x', scaleratio=float(ar))
+
+    # return fig
+    if title is not None:
+        fig.update_layout(title=title)
+    
+    html_str = fig.to_html(
+    include_plotlyjs='cdn',   # load plotly.js from a CDN instead of embedding it
+    full_html=False,          # just a <div>, no <html>/<body> wrapper
+    )
+    
+    return html_str
+
+def show_plotly(G, title=None):
+    return html(sage_to_plotly_html(G, title=title))
 
 # ----------
 
